@@ -13,7 +13,7 @@
     <version>1.0</version>
     <packaging>pom</packaging>
     <name>Java SE Extensions</name>
-    <description>This is the aggregator of all Java SE Extension Modules.</description>
+    <description>This aggregator manages the version of all Java SE extension modules.</description>
     <url>https://github.com/zhyi/zse</url>
     <inceptionYear>2012</inceptionYear>
     <scm>
