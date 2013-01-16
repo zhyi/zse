@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>zhyi</groupId>
+        <artifactId>base</artifactId>
+        <version>1.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>zhyi</groupId>
+    <artifactId>zse</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <name>Java SE Extensions</name>
+    <description>This is the aggregator of all Java SE Extension Modules.</description>
+    <url>https://github.com/zhyi/zse</url>
+    <inceptionYear>2012</inceptionYear>
+    <scm>
+        <connection>scm:git:https://github.com/zhyi/zse.git</connection>
+        <developerConnection>scm:git:https://github.com/zhyi/zse.git</developerConnection>
+        <url>https://github.com/zhyi/zse-common</url>
+    </scm>
+    <modules>
+        <module>../zse-common</module>
+        <module>../zse-opt</module>
+        <module>../zse-swing</module>
+    </modules>
+</project>
