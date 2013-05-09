@@ -22,8 +22,8 @@
         <url>https://github.com/zhyi/zse-common</url>
     </scm>
     <modules>
-        <module>../zse-common</module>
-        <module>../zse-opt</module>
-        <module>../zse-swing</module>
+        <module>zse-common</module>
+        <module>zse-opt</module>
+        <module>zse-swing</module>
     </modules>
 </project>
