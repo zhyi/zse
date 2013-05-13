@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) 2013 Zhao Yi
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<?import java.awt.Dialog?>
+<?import java.awt.Font?>
+<?import java.awt.event.ActionListener?>
+<?import java.awt.event.ComponentListener?>
+<?import java.awt.font.TextAttribute?>
+<?import javax.swing.GroupLayout?>
+<?import javax.swing.JButton?>
+<?import javax.swing.JDialog?>
+<?import javax.swing.JLabel?>
+<?import javax.swing.JScrollPane?>
+<?import javax.swing.JTextArea?>
+<?import javax.swing.WindowConstants?>
+<?resource zhyi.zse.swing.ExceptionDialog?>
+
+<ExceptionDialog>
+    <JLabel id="iconLabel"/>
+    <JLabel id="messageLabel" font="bold 18"/>
+    <JTextArea id="stackTraceTextArea" editable="false"/>
+    <JScrollPane id="stackTraceScrollPane" viewportView="#{ref.stackTraceTextArea}"/>
+    <JButton id="closeButton" text="#{res.closeButtonText}">
+        <ActionListener actionPerformed="closeDialog"/>
+    </JButton>
+    <JDialog id="controller" modalityType="#{Dialog.DEFAULT_MODALITY_TYPE}"
+             size="640, 360" resizable="false" defaultCloseOperation="#{WindowConstants.DISPOSE_ON_CLOSE}">
+        <ComponentListener componentShown="dialogShown"/>
+        <layout autoCreateContainerGaps="true" autoCreateGaps="true">
+            <group type="parallel" alignment="CENTER">
+                <group type="sequential">
+                    <component ref="errorIconLabel"/>
+                    <preferredGap type="UNRELATED"/>
+                    <group type="parallel">
+                        <component ref="messageLabel"/>
+                        <component ref="stackTraceScrollPane"/>
+                    </group>
+                </group>
+                <component ref="closeButton"/>
+            </group>
+            <group type="sequential">
+                <group type="parallel">
+                    <component ref="errorIconLabel"/>
+                    <group type="sequential">
+                        <component ref="messageLabel" min="#{GroupLayout.PREFERRED_SIZE}"
+                                   pref="#{GroupLayout.PREFERRED_SIZE}" max="#{GroupLayout.PREFERRED_SIZE}"/>
+                        <component ref="stackTraceScrollPane"/>
+                    </group>
+                </group>
+                <component ref="closeButton"/>
+            </group>
+        </layout>
+    </JDialog>
+</ExceptionDialog>
