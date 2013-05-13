@@ -11,14 +11,8 @@
     <groupId>zhyi.zse</groupId>
     <artifactId>zse-swing</artifactId>
     <name>Java SE Extension - Swing</name>
-    <description>This library is an extension to JFC/Swing.</description>
-    <url>https://github.com/zhyi/zse-swing</url>
+    <description>Contains useful classes for Java Swing GUI development.</description>
     <inceptionYear>2012</inceptionYear>
-    <scm>
-        <connection>scm:git:https://github.com/zhyi/zse-swing.git</connection>
-        <developerConnection>scm:git:https://github.com/zhyi/zse-swing.git</developerConnection>
-        <url>https://github.com/zhyi/zse-swing</url>
-    </scm>
     <dependencies>
         <dependency>
             <groupId>zhyi.zse</groupId>

@@ -5,7 +5,7 @@ Copyright (C) 2013 Zhao Yi
 
 Licensed under GNU GPL Version 3.
 
-This is the aggregator of all Java SE Extension Modules.
+The aggregator of all Java SE Extension Modules.
 
 zse-common
 ---
@@ -17,8 +17,7 @@ libraries.
 
 zse-opt
 ---
-This library provides a simple and type-safe framework to manage application
-options.
+Provides a simple and type-safe framework to manage application options.
 
 An option is represented by an `Option` instance, which defines the option's
 name, value type and default value. The `OptionManager` interface defines a set
@@ -29,5 +28,5 @@ implementations of `OptionManager`: `PreferencesOptionManager` and
 
 zse-swing
 ---
-This library contains useful classes for Java Swing GUI development, inlcuding
-a common main class `SwingApplication`.
+Contains useful classes for Java Swing GUI development, inlcuding a common main
+class `SwingApplication`.

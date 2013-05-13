@@ -19,7 +19,7 @@
     <scm>
         <connection>scm:git:https://github.com/zhyi/zse.git</connection>
         <developerConnection>scm:git:https://github.com/zhyi/zse.git</developerConnection>
-        <url>https://github.com/zhyi/zse-common</url>
+        <url>https://github.com/zhyi/zse</url>
     </scm>
     <modules>
         <module>zse-common</module>
@@ -31,21 +31,18 @@
             <dependency>
                 <groupId>zhyi.zse</groupId>
                 <artifactId>zse-common</artifactId>
-                <version>${version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>zhyi.zse</groupId>
                 <artifactId>zse-opt</artifactId>
-                <version>${version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>zhyi.zse</groupId>
                 <artifactId>zse-swing</artifactId>
-                <version>${version}</version>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
-    <properties>
-        <version>${project.version}</version>
-    </properties>
 </project>

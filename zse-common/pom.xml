@@ -12,11 +12,5 @@
     <artifactId>zse-common</artifactId>
     <name>Java SE Extension - Common</name>
     <description>An extension to the most commonly used Java SE classes.</description>
-    <url>https://github.com/zhyi/zse-common</url>
     <inceptionYear>2012</inceptionYear>
-    <scm>
-        <connection>scm:git:https://github.com/zhyi/zse-common.git</connection>
-        <developerConnection>scm:git:https://github.com/zhyi/zse-common.git</developerConnection>
-        <url>https://github.com/zhyi/zse-common</url>
-    </scm>
 </project>
