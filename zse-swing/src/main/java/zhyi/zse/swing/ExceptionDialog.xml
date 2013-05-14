@@ -29,6 +29,7 @@
 <?import javax.swing.JScrollPane?>
 <?import javax.swing.JTextArea?>
 <?import javax.swing.WindowConstants?>
+<?import zhyi.zse.swing.ExceptionDialog?>
 <?resource zhyi.zse.swing.ExceptionDialog?>
 
 <gui>
