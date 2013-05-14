@@ -101,6 +101,11 @@ import zhyi.zse.lang.StringUtils.DelimitationStyle;
  * @author Zhao Yi
  */
 public class GuiParser {
+    /**
+     * Constant for the ID of the controller object.
+     */
+    public static final String CONTROLLER_ID = "controller";
+
     private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
     private static final DocumentBuilder DOCUMENT_BUILDER = createDocumentBuilder();
     private static final StyleSheet STYLE_SHEET = new StyleSheet();
@@ -240,7 +245,7 @@ public class GuiParser {
                     }
                     break;
                 case Node.ELEMENT_NODE:    // The unique root node.
-                    controller = objectMap.get("controller");
+                    controller = objectMap.get(CONTROLLER_ID);
                     if (controller == null) {
                         controller = ReflectionUtils.newInstance(controllerClass);
                     }
@@ -816,8 +821,8 @@ public class GuiParser {
      * The GUI XML is read from the resource specified by the {@code guiXmlName}
      * parameter, and is loaded by the controller class.
      * <p>
-     * This method is a convenient variant of {@link #parse(InputStream, Class, Map)}
-     * when the GUI XML is a class path resource.
+     * This method is a convenient variant of {@link #parse(InputStream, Class)}
+     * where the GUI XML is a class path resource.
      *
      * @param <T> The GUI controller's type.
      *
@@ -836,11 +841,8 @@ public class GuiParser {
      * Parses a GUI XML to a GUI controller instance, with a map containing
      * already created objects.
      * <p>
-     * The GUI XML is read from the resource specified by the {@code guiXmlName}
-     * parameter, and is loaded by the controller class.
-     * <p>
-     * This method is a convenient variant of {@link #parse(String, Class, Map)}
-     * when there are no existing objects.
+     * This method is a convenient variant of {@link #parse(InputStream, Class, Map)}
+     * where the GUI XML is a class path resource.
      *
      * @param <T> The GUI controller's type.
      *
@@ -862,7 +864,7 @@ public class GuiParser {
      * Parses a GUI XML to a GUI controller instance.
      * <p>
      * This method is a convenient variant of {@link #parse(InputStream, Class, Map)}
-     * when there are no existing objects.
+     * where there are no existing objects.
      *
      * @param <T> The GUI controller's type.
      *
@@ -894,6 +896,8 @@ public class GuiParser {
      * in this map, that bean is directly used instead of creating a new one.
      * Beans, including the controller instance, are automatically constructed
      * with their default constructors, if they are not contained in this map.
+     * Specially, if an object is associated with key {@link #CONTROLLER_ID} in
+     * the map, that object is treated as the controller instance.
      *
      * @param <T> The GUI controller's type.
      *
