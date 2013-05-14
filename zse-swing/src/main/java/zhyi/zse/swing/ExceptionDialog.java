@@ -48,9 +48,8 @@ public final class ExceptionDialog extends JDialog {
 
     @SuppressWarnings("LeakingThisInConstructor")
     public ExceptionDialog(Window owner) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("controller", this);
-        GuiParser.parse("ExceptionDialog.xml", ExceptionDialog.class, map);
+        GuiParser.parse("ExceptionDialog.xml",
+                ExceptionDialog.class, new ControllerMap(this));
     }
 
     public void show(Exception ex) {
