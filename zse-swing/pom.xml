@@ -18,9 +18,5 @@
             <groupId>zhyi.zse</groupId>
             <artifactId>zse-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>zhyi.zse</groupId>
-            <artifactId>zse-opt</artifactId>
-        </dependency>
     </dependencies>
 </project>
