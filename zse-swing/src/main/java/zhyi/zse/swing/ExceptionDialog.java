@@ -20,8 +20,6 @@ import java.awt.Component;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.ResourceBundle;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -48,8 +46,7 @@ public final class ExceptionDialog extends JDialog {
 
     @SuppressWarnings("LeakingThisInConstructor")
     public ExceptionDialog(Window owner) {
-        GuiParser.parse("ExceptionDialog.xml",
-                ExceptionDialog.class, new ControllerMap(this));
+        GuiParser.parse("ExceptionDialog.xml", this);
     }
 
     public void show(Exception ex) {

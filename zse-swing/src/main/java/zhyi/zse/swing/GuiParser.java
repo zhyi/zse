@@ -101,11 +101,6 @@ import zhyi.zse.lang.StringUtils.DelimitationStyle;
  * @author Zhao Yi
  */
 public class GuiParser {
-    /**
-     * Constant for the ID of the controller object.
-     */
-    public static final String CONTROLLER_ID = "controller";
-
     private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
     private static final DocumentBuilder DOCUMENT_BUILDER = createDocumentBuilder();
     private static final StyleSheet STYLE_SHEET = new StyleSheet();
@@ -199,10 +194,11 @@ public class GuiParser {
     private String resourceBundleName;
     private boolean autoMnemonic;
 
-    private GuiParser(Document guiXml, Class<?> controllerClass,
+    private GuiParser(Document guiXml, Object controller,
             Map<String, Object> existingObjectMap) {
         this.guiXml = guiXml;
-        this.controllerClass = controllerClass;
+        this.controller = controller;
+        controllerClass = controller.getClass();
         controllerLoader = controllerClass.getClassLoader();
         importMap = new HashMap<>();
         beanMateMap = new HashMap<>();
@@ -214,7 +210,7 @@ public class GuiParser {
         CONVERTER_MANAGER.register(Icon.class, new AsObjectOnly<Icon>() {
             @Override
             protected Icon asObjectInternal(String literalValue) {
-                URL url = GuiParser.this.controllerClass.getResource(literalValue);
+                URL url = controllerClass.getResource(literalValue);
                 if (url == null) {
                     url = controllerLoader.getResource(literalValue);
                     if (url == null) {
@@ -226,7 +222,7 @@ public class GuiParser {
         });
     }
 
-    private Object parse() throws ReflectiveOperationException {
+    private void parse() throws ReflectiveOperationException {
         for (Node node : iterable(guiXml.getChildNodes())) {
             switch (node.getNodeType()) {
                 case Node.PROCESSING_INSTRUCTION_NODE:
@@ -245,10 +241,6 @@ public class GuiParser {
                     }
                     break;
                 case Node.ELEMENT_NODE:    // The unique root node.
-                    controller = objectMap.get(CONTROLLER_ID);
-                    if (controller == null) {
-                        controller = ReflectionUtils.newInstance(controllerClass);
-                    }
                     for (Element child : getChildren((Element) node, "*")) {
                         createBean(child);
                     }
@@ -269,7 +261,6 @@ public class GuiParser {
                 break;
             }
         }
-        return controller;
     }
 
     @SuppressWarnings("unchecked")
@@ -816,74 +807,52 @@ public class GuiParser {
     }
 
     /**
-     * Parses a GUI XML to a GUI controller instance.
+     * Parses a GUI XML.
      * <p>
-     * The GUI XML is read from the resource specified by the {@code guiXmlName}
-     * parameter, and is loaded by the controller class.
-     * <p>
-     * This method is a convenient variant of {@link #parse(InputStream, Class)}
-     * where the GUI XML is a class path resource.
+     * This method is a convenient variant of {@link #parse(String, Object,
+     * Map) parse(String, Object, Map)} where there are no existing objects.
      *
-     * @param <T> The GUI controller's type.
-     *
-     * @param guiXmlName      The name of the GUI XML.
-     * @param controllerClass The GUI controller's class.
-     *
-     * @return The GUI controller instance with all declared components initialized.
-     *
-     * @see #parse(InputStream, Class, Map)
+     * @param guiXmlName The resource name of the GUI XML.
+     * @param controller The GUI controller instance.
      */
-    public static <T> T parse(String guiXmlName, Class<T> controllerClass) {
-        return parse(controllerClass.getResourceAsStream(guiXmlName), controllerClass, null);
+    public static void parse(String guiXmlName, Object controller) {
+        parse(controller.getClass().getResourceAsStream(guiXmlName), controller, null);
     }
 
     /**
-     * Parses a GUI XML to a GUI controller instance, with a map containing
-     * already created objects.
+     * Parses a GUI XML, with a map containing already created objects.
      * <p>
-     * This method is a convenient variant of {@link #parse(InputStream, Class, Map)}
-     * where the GUI XML is a class path resource.
+     * This method is a convenient variant of {@link #parse(InputStream, Object,
+     * Map) parse(InputStream, Object, Map)} where the GUI XML is a class path
+     * resource.
      *
-     * @param <T> The GUI controller's type.
-     *
-     * @param guiXmlName        The name of the GUI XML.
-     * @param controllerClass   The GUI controller's class.
+     * @param guiXmlName        The resource name of the GUI XML.
+     * @param controller        The GUI controller instance.
      * @param existingObjectMap A map containing existing ID-object pairs.
-     *
-     * @return The GUI controller instance with all declared components initialized.
-     *
-     * @see #parse(InputStream, Class, Map)
      */
-    public static <T> T parse(String guiXmlName, Class<T> controllerClass,
+    public static void parse(String guiXmlName, Object controller,
             Map<String, Object> existingObjectMap) {
-        return parse(controllerClass.getResourceAsStream(guiXmlName),
-                controllerClass, existingObjectMap);
+        parse(controller.getClass().getResourceAsStream(guiXmlName),
+                controller, existingObjectMap);
     }
 
     /**
-     * Parses a GUI XML to a GUI controller instance.
+     * Parses a GUI XML.
      * <p>
-     * This method is a convenient variant of {@link #parse(InputStream, Class, Map)}
-     * where there are no existing objects.
+     * This method is a convenient variant of {@link #parse(InputStream, Object,
+     * Map) parse(InputStream, Object, Map)} where there are no existing objects.
      *
-     * @param <T> The GUI controller's type.
-     *
-     * @param guiXmlIn        The input stream from which to read the XML GUI
-     *                        declaration. It remains open after this method
-     *                        has returned.
-     * @param controllerClass The GUI controller's class.
-     *
-     * @return The GUI controller instance with all declared components initialized.
-     *
-     * @see #parse(InputStream, Class, Map)
+     * @param guiXmlIn   The input stream from which to read the XML GUI
+     *                   declaration. It remains open after this method has
+     *                   returned.
+     * @param controller The controller instance.
      */
-    public static <T> T parse(InputStream guiXmlIn, Class<T> controllerClass) {
-        return parse(guiXmlIn, controllerClass, null);
+    public static void parse(InputStream guiXmlIn, Object controller) {
+        parse(guiXmlIn, controller, null);
     }
 
     /**
-     * Parses a GUI XML to a GUI controller instance, with a map containing
-     * already created objects.
+     * Parses a GUI XML, with a map containing already created objects.
      * <p>
      * The GUI controller class can optionally declares fields with their types
      * and names matching the elements declared in the GUI XML. One of its methods
@@ -891,32 +860,22 @@ public class GuiParser {
      * called after the GUI has been parsed. If more than one methods are annotated
      * with {@link PostParseGui}, only the first found one is called.
      * <p>
-     * The {@code existingBeanMap} provide already created beans. While parsing
-     * an element, if the element's ID is already associated with a bean
-     * in this map, that bean is directly used instead of creating a new one.
-     * Beans, including the controller instance, are automatically constructed
-     * with their default constructors, if they are not contained in this map.
-     * Specially, if an object is associated with key {@link #CONTROLLER_ID} in
-     * the map, that object is treated as the controller instance.
-     *
-     * @param <T> The GUI controller's type.
+     * The {@code existingBeanMap} may contain already created objects. While
+     * parsing an element, if the element's ID is already associated with a object
+     * in this map, that object is directly used instead of reflectively creating
+     * a new one with the default constructor.
      *
      * @param guiXmlIn          The input stream from which to read the XML GUI
      *                          declaration. It remains open after this method
      *                          has returned.
-     * @param controllerClass   The GUI controller's class.
+     * @param controller        The controller instance.
      * @param existingObjectMap A map containing existing ID-bean pairs.
-     *
-     * @return The GUI controller instance with all declared components initialized.
-     *
-     * @see PostParseGui
      */
-    public static <T> T parse(InputStream guiXmlIn, Class<T> controllerClass,
+    public static void parse(InputStream guiXmlIn, Object controller,
             Map<String, Object> existingObjectMap)  {
         try {
-            GuiParser gp = new GuiParser(DOCUMENT_BUILDER.parse(guiXmlIn),
-                    controllerClass, existingObjectMap);
-            return controllerClass.cast(gp.parse());
+            new GuiParser(DOCUMENT_BUILDER.parse(guiXmlIn),
+                    controller, existingObjectMap).parse();
         } catch (IOException | ReflectiveOperationException | SAXException ex) {
             throw new RuntimeException(ex);
         }
