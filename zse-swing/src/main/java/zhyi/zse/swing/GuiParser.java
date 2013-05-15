@@ -187,6 +187,7 @@ public class GuiParser {
     private Class<?> controllerClass;
     private Object controller;
     private Map<String, Class<?>> importMap;
+    private List<String> starImports;
     private Map<Class<?>, BeanMate> beanMateMap;
     private Map<Class<?>, ListenerMate> listenerMateMap;
     private Map<String, Object> objectMap;
@@ -200,6 +201,13 @@ public class GuiParser {
         controllerClass = controller.getClass();
         controllerLoader = controllerClass.getClassLoader();
         importMap = new HashMap<>();
+        starImports = new ArrayList<>();
+        starImports.add("java.lang.");
+        starImports.add("java.util.");
+        starImports.add("java.awt.");
+        starImports.add("java.awt.event.");
+        starImports.add("javax.swing.");
+        starImports.add("javax.swing.event.");
         beanMateMap = new HashMap<>();
         listenerMateMap = new HashMap<>();
         objectMap = new HashMap<>();
@@ -229,9 +237,13 @@ public class GuiParser {
                     String data = pi.getData();
                     switch (pi.getTarget()) {
                         case "import":
-                            Class<?> c = ReflectionUtils.getClass(
-                                    data, true, controllerLoader);
-                            importMap.put(c.getSimpleName(), c);
+                            if (data.endsWith("*")) {
+                                starImports.add(data.substring(0, data.length() - 1));
+                            } else {
+                                Class<?> c = ReflectionUtils.getClass(
+                                        data, true, controllerLoader);
+                                importMap.put(c.getSimpleName(), c);
+                            }
                             break;
                         case "resource":
                             resourceBundleName = data;
@@ -624,7 +636,16 @@ public class GuiParser {
     private Class<?> getClass(String name) {
         Class<?> beanClass = importMap.get(name);
         if (beanClass == null) {
-            beanClass = ReflectionUtils.getClass(name, true, controllerLoader);
+            for (String starImport : starImports) {
+                String fqcn = starImport + name;
+                if (controllerLoader.getResource(starImport + name) != null) {
+                    beanClass = ReflectionUtils.getClass(fqcn, true, controllerLoader);
+                    break;
+                }
+            }
+            if (beanClass == null) {
+                beanClass = ReflectionUtils.getClass(name, true, controllerLoader);
+            }
         }
         return beanClass;
     }
