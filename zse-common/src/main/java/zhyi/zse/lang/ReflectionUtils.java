@@ -196,7 +196,7 @@ public class ReflectionUtils {
      *
      * @return The value of the field.
      */
-    public static Object getFieldValue(Field f, Object o) {
+    public static Object getValue(Field f, Object o) {
         try {
             makeAccessible(f);
             return f.get(o);
@@ -217,7 +217,7 @@ public class ReflectionUtils {
      *          for a static field.
      * @param v the new value of the field. 
      */
-    public static void setFieldValue(Field f, Object o, Object v) {
+    public static void setValue(Field f, Object o, Object v) {
         try {
             makeAccessible(f);
             f.set(o, v);
