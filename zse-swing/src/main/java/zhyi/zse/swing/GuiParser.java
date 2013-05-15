@@ -208,6 +208,7 @@ public class GuiParser {
         starImports.add("java.awt.event.");
         starImports.add("javax.swing.");
         starImports.add("javax.swing.event.");
+        starImports.add("zhyi.zse.swing.");
         beanMateMap = new HashMap<>();
         listenerMateMap = new HashMap<>();
         objectMap = new HashMap<>();
