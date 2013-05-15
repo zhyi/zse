@@ -597,16 +597,22 @@ public class GuiParser {
     private void addListener(Object bean, Element e) {
         ListenerMate lm = getListenerMate(getClass(e.getTagName()));
         final Map<Method, Method> methodMap = new HashMap<>();
-        String propertyName = null;
+        String forProp = null;
+        String propName = null;
         for (Node attr : iterable(e.getAttributes())) {
             String name = attr.getNodeName();
             String value = attr.getNodeValue();
-            if (name.equals("propertyName")) {
-                propertyName = evaluate(value, String.class, null);
-            } else {
-                Method listenerMethod = lm.methodMap.get(name);
-                methodMap.put(listenerMethod, ReflectionUtils.getDeclaredMethod(
-                        controllerClass, value, listenerMethod.getParameterTypes()));
+            switch (name) {
+                case "for":
+                    forProp = value;
+                    break;
+                case "propertyName":
+                    propName = evaluate(value, String.class, null);
+                    break;
+                default:
+                    Method listenerMethod = lm.methodMap.get(name);
+                    methodMap.put(listenerMethod, ReflectionUtils.getDeclaredMethod(
+                            controllerClass, value, listenerMethod.getParameterTypes()));
             }
         }
 
@@ -622,14 +628,24 @@ public class GuiParser {
             }
         });
 
-        if (propertyName != null && PropertyChangeListener
+        Object target = bean;
+        if (forProp != null) {
+            String getter = "get" + Character.toUpperCase(forProp.charAt(0))
+                    + forProp.substring(1);
+            target = ReflectionUtils.invoke(
+                    ReflectionUtils.getMethod(bean.getClass(), getter), bean);
+        }
+
+        if (propName != null && PropertyChangeListener
                 .class.isAssignableFrom(lm.listenerClass)) {
-            ((JComponent) bean).addPropertyChangeListener(
-                    propertyName, (PropertyChangeListener) listener);
+            ReflectionUtils.invoke(
+                    ReflectionUtils.getMethod(target.getClass(), "addPropertyChangeListener",
+                            String.class, PropertyChangeListener.class),
+                    target, listener);
         } else {
             ReflectionUtils.invoke(
-                    getBeanMate(bean.getClass()).addListenerMap.get(lm.listenerClass),
-                    bean, listener);
+                    getBeanMate(target.getClass()).addListenerMap.get(lm.listenerClass),
+                    target, listener);
         }
     }
 
