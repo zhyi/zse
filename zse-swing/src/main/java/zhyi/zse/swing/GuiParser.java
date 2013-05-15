@@ -639,7 +639,8 @@ public class GuiParser {
         if (propName != null && PropertyChangeListener
                 .class.isAssignableFrom(lm.listenerClass)) {
             ReflectionUtils.invoke(
-                    ReflectionUtils.getMethod(target.getClass(), "addPropertyChangeListener",
+                    ReflectionUtils.getMethod(target.getClass(),
+                            "addPropertyChangeListener",
                             String.class, PropertyChangeListener.class),
                     target, listener);
         } else {
