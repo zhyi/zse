@@ -27,6 +27,9 @@ import java.util.Map;
 
 /**
  * Utility methods for reflection.
+ * <p>
+ * Unlike standard reflective operations, all methods in this class throw
+ * {@link RuntimeException}s while errors occur.
  *
  * @author Zhao Yi
  */
@@ -64,13 +67,10 @@ public class ReflectionUtils {
 
     /**
      * Returns the class represented by the specified FQCN.
-     * <p>
-     * Unlike {@link Class#forName(String)}, this method returns {@code null}
-     * if no matching class is found.
      *
      * @param name The fully qualified name of the desired class.
      *
-     * @return The desired class or {@code null}.
+     * @return The desired class.
      *
      * @see Class#forName(String)
      */
@@ -78,45 +78,42 @@ public class ReflectionUtils {
         try {
             return Class.forName(name);
         } catch (ClassNotFoundException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
     /**
      * Returns the class represented by the specified FQCN.
-     * <p>
-     * Unlike {@link Class#forName(String, boolean, ClassLoader)}, this method
-     * returns {@code null} if no matching class is found.
      *
      * @param name       The fully qualified name of the desired class.
      * @param initialize Whether the class must be initialized.
      * @param loader     The class loader from which to load the class.
      *
-     * @return The desired class or {@code null}.
+     * @return The desired class.
      *
      * @see Class#forName(String, boolean, ClassLoader)
      */
-    public static Class<?> getClass(String name, boolean initialize, ClassLoader loader) {
+    public static Class<?> getClass(String name,
+            boolean initialize, ClassLoader loader) {
         try {
             return Class.forName(name, initialize, loader);
         } catch (ClassNotFoundException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
     /**
      * Returns a declared constructor of a class.
      * <p>
-     * The returned constructor has been made accessible. Unlike {@link
-     * Class#getDeclaredConstructor}, this method returns {@code null} if no
-     * matching constructor is found.
+     * If the constructor is inaccessible, it will be made accessible before
+     * returning.
      *
      * @param <T> The type modeled by the class.
      *
      * @param c              The class object.
      * @param parameterTypes The method's parameter types.
      *
-     * @return The desired constructor or {@code null}.
+     * @return The desired constructor.
      *
      * @see Class#getDeclaredConstructor
      */
@@ -124,31 +121,20 @@ public class ReflectionUtils {
             Class<T> c, Class<?>... parameterTypes) {
         try {
             final Constructor<T> con = c.getDeclaredConstructor(parameterTypes);
-            if (!con.isAccessible()) {
-                AccessController.doPrivileged(new PrivilegedAction<Void>() {
-                    @Override
-                    public Void run() {
-                        con.setAccessible(true);
-                        return null;
-                    }
-                });
-            }
+            makeAccessible(con);
             return con;
         } catch (NoSuchMethodException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
     /**
      * Returns a public field of a class.
-     * <p>
-     * Unlike {@link Class#getField}, this method returns {@code null} if no
-     * matching field is found.
      *
      * @param c    The class object.
      * @param name The field name.
      *
-     * @return The desired field or {@code null}.
+     * @return The desired field.
      *
      * @see Class#getField
      */
@@ -156,15 +142,14 @@ public class ReflectionUtils {
         try {
             return c.getField(name);
         } catch (NoSuchFieldException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
     /**
      * Returns a declared method of a class.
      * <p>
-     * The returned field has been made accessible. Unlike {@link Class#getMethod},
-     * this method returns {@code null} if no matching field is found.
+     * If the field is inaccessible, it will be made accessible before returning.
      *
      * @param c    The class object.
      * @param name The method name.
@@ -186,15 +171,16 @@ public class ReflectionUtils {
     /**
      * Returns the value of a field.
      * <p>
-     * The field will be made accessible, if it is inaccessible. Unlike
-     * {@link Field#get}, this method throws a {@link RuntimeException}
-     * when the reflective operation has failed.
+     * If the field is inaccessible, it will be made accessible after invoking
+     * this method.
      *
      * @param f The field object.
      * @param o The object from which to retrieve the field, or {@code null} for
      *          a static field.
      *
      * @return The value of the field.
+     *
+     * @see Field#get
      */
     public static Object getValue(Field f, Object o) {
         try {
@@ -206,11 +192,10 @@ public class ReflectionUtils {
     }
 
     /**
-     * Changes the value of a field.
+     * Sets the value of a field.
      * <p>
-     * The field will be made accessible, if it is inaccessible. Unlike
-     * {@link Field#set}, this method throws a {@link RuntimeException}
-     * when the reflective operation has failed.
+     * If the field is inaccessible, it will be made accessible after invoking
+     * this method.
      *
      * @param f The field object.
      * @param o The object of which the field should be changed, or {@code null}
@@ -228,9 +213,6 @@ public class ReflectionUtils {
 
     /**
      * Returns a public method of a class.
-     * <p>
-     * Unlike {@link Class#getMethod}, this method returns {@code null} if no
-     * matching method is found.
      *
      * @param c              The class object.
      * @param name           The method name.
@@ -245,15 +227,14 @@ public class ReflectionUtils {
         try {
             return c.getMethod(name, parameterTypes);
         } catch (NoSuchMethodException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
     /**
      * Returns a declared method of a class.
      * <p>
-     * The returned method has been made accessible. Unlike {@link Class#getMethod},
-     * this method returns {@code null} if no matching method is found.
+     * If the method is inaccessible, it will be made accessible before returning.
      *
      * @param c              The class object.
      * @param name           The method name.
@@ -270,16 +251,15 @@ public class ReflectionUtils {
             makeAccessible(m);
             return m;
         } catch (NoSuchMethodException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
     /**
      * Invokes a method.
      * <p>
-     * The method will be made accessible, if it is inaccessible. Unlike
-     * {@link Method#invoke}, this method throws a {@link RuntimeException}
-     * when the reflective operation has failed.
+     * If the method is inaccessible, it will be made accessible after invoking
+     * this method.
      *
      * @param m         The method to be invoked.
      * @param o         The object from which to invoke the method, or {@code null}
@@ -300,9 +280,6 @@ public class ReflectionUtils {
 
     /**
      * Creates a new instance with the default constructor of the specified class.
-     * <p>
-     * Unlike {@link Class#newInstance}, this method returns {@code null} if
-     * the construction fails.
      *
      * @param <T> The type modeled by the class.
      *
@@ -316,7 +293,7 @@ public class ReflectionUtils {
         try {
             return getDeclaredConstructor(c).newInstance();
         } catch (ReflectiveOperationException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
