@@ -37,8 +37,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -106,7 +104,8 @@ public class GuiParser {
     private static final StyleSheet STYLE_SHEET = new StyleSheet();
     private static final Constructor<?> CSS_BORDER_CONSTRUCTOR
             = ReflectionUtils.getDeclaredConstructor(
-                    ReflectionUtils.forName("javax.swing.text.html.CSSBorder"), AttributeSet.class);
+                    ReflectionUtils.getClass("javax.swing.text.html.CSSBorder"),
+                    AttributeSet.class);
     private static final ConverterManager CONVERTER_MANAGER = new ConverterManager();
     static {
         CONVERTER_MANAGER.register(Border.class, new AsObjectOnly<Border>() {
@@ -222,7 +221,7 @@ public class GuiParser {
         });
     }
 
-    private void parse() throws ReflectiveOperationException {
+    private void parse() {
         for (Node node : iterable(guiXml.getChildNodes())) {
             switch (node.getNodeType()) {
                 case Node.PROCESSING_INSTRUCTION_NODE:
@@ -230,7 +229,8 @@ public class GuiParser {
                     String data = pi.getData();
                     switch (pi.getTarget()) {
                         case "import":
-                            Class<?> c = Class.forName(data, true, controllerLoader);
+                            Class<?> c = ReflectionUtils.getClass(
+                                    data, true, controllerLoader);
                             importMap.put(c.getSimpleName(), c);
                             break;
                         case "resource":
@@ -248,36 +248,29 @@ public class GuiParser {
         }
         for (final Method m : controllerClass.getDeclaredMethods()) {
             if (m.isAnnotationPresent(PostParseGui.class)) {
-                if (!m.isAccessible()) {
-                    AccessController.doPrivileged(new PrivilegedAction<Void>() {
-                        @Override
-                        public Void run() {
-                            m.setAccessible(true);
-                            return null;
-                        }
-                    });
-                }
-                m.invoke(controller);
+                ReflectionUtils.invoke(m, controller);
                 break;
             }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private Object createBean(Element e) throws ReflectiveOperationException {
-        Object bean = null;
-        String id = getAttribute(e, "id");
-        if (id != null) {
-            bean = objectMap.get(id);
-        }
-        if (bean == null) {
+    private Object createBean(Element e) {
+        Object bean;
+        if (e.getTagName().equals(controllerClass.getSimpleName())) {
+            bean = controller;
+        } else {
             bean = ReflectionUtils.newInstance(getClass(e.getTagName()));
         }
+
+        String id = getAttribute(e, "id");
         if (id != null) {
             objectMap.put(id, bean);
-            Field field = ReflectionUtils.getDeclaredField(controllerClass, id);
-            if (field != null) {
-                field.set(controller, bean);
+            if (bean != controller) {
+                Field field = ReflectionUtils.getDeclaredField(controllerClass, id);
+                if (field != null) {
+                    ReflectionUtils.setValue(field, controller, bean);
+                }
             }
         }
 
@@ -404,8 +397,7 @@ public class GuiParser {
         return bean;
     }
 
-    private void setProperties(final Object bean, NamedNodeMap attrs)
-            throws ReflectiveOperationException {
+    private void setProperties(final Object bean, NamedNodeMap attrs) {
         BeanMate bm = getBeanMate(bean.getClass());
         String borderTitle = null;
         for (Node attr : iterable(attrs)) {
@@ -425,34 +417,32 @@ public class GuiParser {
                     break;
                 default:
                     final Method setter = bm.setterMap.get(name);
-                    if (setter != null) {
-                        final Class<?> propClass = setter.getParameterTypes()[0];
-                        Object prop = evaluate(value, propClass);
-                        if (prop instanceof Font) {
-                            Font font = (Font) prop;
-                            JComponent c = (JComponent) bean;
-                            if (value.contains(font.getName())) {
-                                c.setFont(font);
-                            } else {
-                                Map<TextAttribute, ?> map = font.getAttributes();
-                                map.remove(TextAttribute.FAMILY);
-                                c.setFont(c.getFont().deriveFont(map));
-                            }
+                    final Class<?> propClass = setter.getParameterTypes()[0];
+                    Object prop = evaluate(value, propClass);
+                    if (prop instanceof Font) {
+                        Font font = (Font) prop;
+                        JComponent c = (JComponent) bean;
+                        if (value.contains(font.getName())) {
+                            c.setFont(font);
                         } else {
-                            setter.invoke(bean, prop);
-                            if (value.startsWith("#{res.") && value.endsWith("}")) {
-                                ((Component) bean).addPropertyChangeListener("locale",
-                                        new PropertyChangeListener() {
-                                    @Override
-                                    public void propertyChange(PropertyChangeEvent evt) {
-                                        try {
-                                            setter.invoke(bean, evaluate(value, propClass));
-                                        } catch (ReflectiveOperationException ex) {
-                                            throw new RuntimeException(ex);
-                                        }
+                            Map<TextAttribute, ?> map = font.getAttributes();
+                            map.remove(TextAttribute.FAMILY);
+                            c.setFont(c.getFont().deriveFont(map));
+                        }
+                    } else {
+                        ReflectionUtils.invoke(setter, bean, prop);
+                        if (value.startsWith("#{res.") && value.endsWith("}")) {
+                            ((Component) bean).addPropertyChangeListener("locale",
+                                    new PropertyChangeListener() {
+                                @Override
+                                public void propertyChange(PropertyChangeEvent evt) {
+                                    try {
+                                        setter.invoke(bean, evaluate(value, propClass));
+                                    } catch (ReflectiveOperationException ex) {
+                                        throw new RuntimeException(ex);
                                     }
-                                });
-                            }
+                                }
+                            });
                         }
                     }
             }
@@ -468,20 +458,15 @@ public class GuiParser {
                 c.addPropertyChangeListener("locale", new PropertyChangeListener() {
                     @Override
                     public void propertyChange(PropertyChangeEvent evt) {
-                        try {
-                            c.setBorder(BorderFactory.createTitledBorder(originalBorder,
-                                evaluate(borderTitleKey, String.class)));
-                        } catch (ReflectiveOperationException ex) {
-                            throw new RuntimeException(ex);
-                        }
+                        c.setBorder(BorderFactory.createTitledBorder(
+                                originalBorder, evaluate(borderTitleKey, String.class)));
                     }
                 });
             }
         }
     }
 
-    private void layout(Container host, Element e)
-            throws ReflectiveOperationException {
+    private void layout(Container host, Element e) {
         GroupLayout gl = new GroupLayout(host);
         setProperties(gl, e.getAttributes());
         host.setLayout(gl);
@@ -504,8 +489,7 @@ public class GuiParser {
     }
 
     @SuppressWarnings("null")
-    private Group createGroup(GroupLayout gl, Element e)
-            throws ReflectiveOperationException {
+    private Group createGroup(GroupLayout gl, Element e) {
         Group group = null;
         switch (getAttribute(e, "type")) {
             case "baseline":
@@ -598,8 +582,7 @@ public class GuiParser {
         return group;
     }
 
-    private void addListener(Object bean, Element e)
-            throws ReflectiveOperationException {
+    private void addListener(Object bean, Element e) {
         ListenerMate lm = getListenerMate(getClass(e.getTagName()));
         final Map<Method, Method> methodMap = new HashMap<>();
         String propertyName = null;
@@ -610,23 +593,18 @@ public class GuiParser {
                 propertyName = evaluate(value, String.class, null);
             } else {
                 Method listenerMethod = lm.methodMap.get(name);
-                if (listenerMethod != null) {
-                    Method controllerMethod = ReflectionUtils.getDeclaredMethod(
-                            controllerClass, value, listenerMethod.getParameterTypes());
-                    if (controllerMethod != null) {
-                        methodMap.put(listenerMethod, controllerMethod);
-                    }
-                }
+                methodMap.put(listenerMethod, ReflectionUtils.getDeclaredMethod(
+                        controllerClass, value, listenerMethod.getParameterTypes()));
             }
         }
 
         Object listener = Proxy.newProxyInstance(controllerLoader,
                 new Class<?>[] {lm.listenerClass}, new InvocationHandler() {
             @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            public Object invoke(Object proxy, Method method, Object[] args) {
                 Method controllerMethod = methodMap.get(method);
                 if (controllerMethod != null) {
-                    return controllerMethod.invoke(controller, args);
+                    ReflectionUtils.invoke(method, controller, args);
                 }
                 return null;
             }
@@ -637,15 +615,16 @@ public class GuiParser {
             ((JComponent) bean).addPropertyChangeListener(
                     propertyName, (PropertyChangeListener) listener);
         } else {
-            getBeanMate(bean.getClass()).addListenerMap
-                    .get(lm.listenerClass).invoke(bean, listener);
+            ReflectionUtils.invoke(
+                    getBeanMate(bean.getClass()).addListenerMap.get(lm.listenerClass),
+                    bean, listener);
         }
     }
 
-    private Class<?> getClass(String name) throws ClassNotFoundException {
+    private Class<?> getClass(String name) {
         Class<?> beanClass = importMap.get(name);
         if (beanClass == null) {
-            beanClass = Class.forName(name, true, controllerLoader);
+            beanClass = ReflectionUtils.getClass(name, true, controllerLoader);
         }
         return beanClass;
     }
@@ -757,8 +736,7 @@ public class GuiParser {
     }
 
     @SuppressWarnings("unchecked")
-    private <V> V evaluate(String literalValue, Class<V> valueClass)
-            throws ReflectiveOperationException {
+    private <V> V evaluate(String literalValue, Class<V> valueClass) {
         valueClass = ReflectionUtils.wrap(valueClass);
         Converter<V> converter = CONVERTER_MANAGER.getConverter(valueClass);
         Object value = literalValue;
@@ -773,7 +751,7 @@ public class GuiParser {
                     value = System.getenv(target);
                     break;
                 case "new":
-                    value = ReflectionUtils.getDeclaredConstructor(getClass(target)).newInstance();
+                    value = ReflectionUtils.newInstance(getClass(target));
                     break;
                 case "ref":
                     value = objectMap.get(target);
@@ -790,7 +768,8 @@ public class GuiParser {
                     value = UIManager.get(target, Locale.getDefault());
                     break;
                 default:
-                    value = getClass(type).getField(target).get(null);
+                    value = ReflectionUtils.getValue(
+                            ReflectionUtils.getField(getClass(type), target), null);
             }
         }
         if (valueClass.isInstance(value)) {
@@ -801,8 +780,8 @@ public class GuiParser {
     }
 
     @SuppressWarnings("UseSpecificCatch")
-    private <V> V evaluate(String literalValue, Class<V> valueClass,
-            V nullDefault) throws ReflectiveOperationException {
+    private <V> V evaluate(String literalValue,
+            Class<V> valueClass, V nullDefault) {
         return literalValue == null ? nullDefault : evaluate(literalValue, valueClass);
     }
 
@@ -855,8 +834,11 @@ public class GuiParser {
      * Parses a GUI XML, with a map containing already created objects.
      * <p>
      * The GUI controller class can optionally declares fields with their types
-     * and names matching the elements declared in the GUI XML. One of its methods
-     * can be annotated with {@link PostParseGui}, so that it is automatically
+     * and names matching the elements declared in the GUI XML. If the GUI XML
+     * has an element with the tag name as the simple name of the controller's
+     * class, the element represents the GUI controller itself. This is typically
+     * useful when the controller is a component. Additionally, one controller's
+     * method can be annotated with {@link PostParseGui}, so that it is automatically
      * called after the GUI has been parsed. If more than one methods are annotated
      * with {@link PostParseGui}, only the first found one is called.
      * <p>
@@ -876,7 +858,7 @@ public class GuiParser {
         try {
             new GuiParser(DOCUMENT_BUILDER.parse(guiXmlIn),
                     controller, existingObjectMap).parse();
-        } catch (IOException | ReflectiveOperationException | SAXException ex) {
+        } catch (IOException | SAXException ex) {
             throw new RuntimeException(ex);
         }
     }

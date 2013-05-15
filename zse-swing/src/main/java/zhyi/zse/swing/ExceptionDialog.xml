@@ -24,7 +24,6 @@
 <?import java.awt.font.TextAttribute?>
 <?import javax.swing.GroupLayout?>
 <?import javax.swing.JButton?>
-<?import javax.swing.JDialog?>
 <?import javax.swing.JLabel?>
 <?import javax.swing.JScrollPane?>
 <?import javax.swing.JTextArea?>
@@ -39,8 +38,8 @@
     <JButton id="closeButton" text="#{res.closeButtonText}">
         <ActionListener actionPerformed="closeDialog"/>
     </JButton>
-    <JDialog id="controller" modalityType="#{Dialog.DEFAULT_MODALITY_TYPE}"
-             size="640, 360" resizable="false" defaultCloseOperation="#{WindowConstants.DISPOSE_ON_CLOSE}">
+    <ExceptionDialog modalityType="#{Dialog.DEFAULT_MODALITY_TYPE}" size="640, 360"
+                     resizable="false" defaultCloseOperation="#{WindowConstants.DISPOSE_ON_CLOSE}">
         <ComponentListener componentShown="dialogShown"/>
         <layout autoCreateContainerGaps="true" autoCreateGaps="true">
             <group type="parallel" alignment="CENTER">
@@ -66,5 +65,5 @@
                 <component ref="closeButton"/>
             </group>
         </layout>
-    </JDialog>
+    </ExceptionDialog>
 </gui>

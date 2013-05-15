@@ -285,11 +285,7 @@ public abstract class SwingApplication {
                     // Update L&F as needed.
                     if (c instanceof JComponent) {
                         if (lafMonitored) {
-                            JComponent jc = (JComponent) c;
-                            if (ReflectionUtils.getFieldValue(UI, jc).getClass()
-                                    != UIManager.getDefaults().getUIClass(jc.getUIClassID())) {
-                                jc.updateUI();
-                            }
+                            ((JComponent) c).updateUI();
                         }
                     }
                 }
