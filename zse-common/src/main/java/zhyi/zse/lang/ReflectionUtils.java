@@ -297,7 +297,12 @@ public class ReflectionUtils {
         }
     }
 
-    private static void makeAccessible(final AccessibleObject ao) {
+    /**
+     * Makes an accessible object (field, method, etc.) to be accessible.
+     *
+     * @param ao The accessible object to be made accessible.
+     */
+    public static void makeAccessible(final AccessibleObject ao) {
         if (!ao.isAccessible()) {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
                 @Override
