@@ -640,10 +640,12 @@ public class GuiParser {
                 String fqcn = starImport.replace('.', '/') + name + ".class";
                 if (controllerLoader.getResource(starImport + name) != null) {
                     beanClass = ReflectionUtils.getClass(fqcn, true, controllerLoader);
+                    importMap.put(name, beanClass);
                     break;
                 }
             }
             if (beanClass == null) {
+                // Treat as FQCN and don't cache it.
                 beanClass = ReflectionUtils.getClass(name, true, controllerLoader);
             }
         }
