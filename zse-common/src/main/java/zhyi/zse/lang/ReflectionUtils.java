@@ -74,7 +74,7 @@ public class ReflectionUtils {
      *
      * @see Class#forName(String)
      */
-    public static Class<?> forName(String name) {
+    public static Class<?> getClass(String name) {
         try {
             return Class.forName(name);
         } catch (ClassNotFoundException ex) {
@@ -96,7 +96,7 @@ public class ReflectionUtils {
      *
      * @see Class#forName(String, boolean, ClassLoader)
      */
-    public static Class<?> forName(String name, boolean initialize, ClassLoader loader) {
+    public static Class<?> getClass(String name, boolean initialize, ClassLoader loader) {
         try {
             return Class.forName(name, initialize, loader);
         } catch (ClassNotFoundException ex) {
