@@ -127,6 +127,8 @@ public abstract class SwingApplication {
     public static void setLocale(Locale l) {
         if (!Locale.getDefault().equals(l)) {
             Locale.setDefault(l);
+            UIManager.getDefaults().setDefaultLocale(l);
+            UIManager.getLookAndFeelDefaults().setDefaultLocale(l);
             JComponent.setDefaultLocale(l);
             for (Window w : Window.getWindows()) {
                 setComponentTreeLocale(w, l);
