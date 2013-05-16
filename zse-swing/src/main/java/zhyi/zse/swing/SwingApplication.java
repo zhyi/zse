@@ -116,15 +116,23 @@ public abstract class SwingApplication {
     private static boolean localeMonitored;
 
     /**
-     * Applies JVM's current default locale to all components at runtime.
+     * Sets the specified locale as the JVM's default locale, and applies it
+     * to all components immediately.
+     * <p>
+     * This method can be used to switch the GUI language at runtime with
+     * appropriate property change listeners on components' locale properties.
+     *
+     * @param l The new locale.
      */
-    public static void updateLocale() {
-        Locale l = Locale.getDefault();
-        JComponent.setDefaultLocale(l);
-        for (Window w : Window.getWindows()) {
-            setComponentTreeLocale(w, l);
+    public static void setLocale(Locale l) {
+        if (!Locale.getDefault().equals(l)) {
+            Locale.setDefault(l);
+            JComponent.setDefaultLocale(l);
+            for (Window w : Window.getWindows()) {
+                setComponentTreeLocale(w, l);
+            }
+            localeMonitored = true;
         }
-        localeMonitored = true;
     }
 
     /**
