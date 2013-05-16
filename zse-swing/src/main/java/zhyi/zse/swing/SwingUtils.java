@@ -20,6 +20,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
 import javax.swing.JMenu;
+import javax.swing.SwingUtilities;
 
 /**
  * Utility methods for Swing.
@@ -75,5 +76,19 @@ public final class SwingUtils {
      */
     public static void showWindow(Window window) {
         showWindow(window, window.getOwner());
+    }
+
+    /**
+     * Always runs a task on EDT: if the current thread is EDT, run the task
+     * immediately, otherwise append it to the event queue.
+     *
+     * @param task The task to run.
+     */
+    public static void runOnEdt(Runnable task) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            task.run();
+        } else {
+            SwingUtilities.invokeLater(task);
+        }
     }
 }
