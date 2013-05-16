@@ -18,6 +18,7 @@ package zhyi.zse.conversion;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import zhyi.zse.lang.ReflectionUtils;
@@ -37,6 +38,7 @@ import zhyi.zse.lang.ReflectionUtils;
  * <li>{@code double} and its wrapper class {@link Double}.
  * <li>{@link String}.
  * <li>{@link Date}.
+ * <li>{@link Locale}.
  * <li>Enumeration types. Converters for these types are automatically
  * registered in method {@link #getConverter(Class)}.
  * <li>{@link Serializable}. The literal value of a serializable object is
@@ -61,6 +63,7 @@ public class ConverterManager {
     private static final Converter<Double> DOUBLE_CONVERTER = new DoubleConverter();
     private static final Converter<String> STRING_CONVERTER = new StringConverter();
     private static final Converter<Date> DATE_CONVERTER = new DateConverter();
+    private static final Converter<Locale> LOCALE_CONVERTER = new LocaleConverter();
     private static final Converter<Serializable> SERIALIZABLE_CONVERTER = new SerializableConverter();
 
     private ConcurrentMap<Class<?>, Converter<?>> converterMap = new ConcurrentHashMap<>();
@@ -79,6 +82,7 @@ public class ConverterManager {
         converterMap.put(Double.class, DOUBLE_CONVERTER);
         converterMap.put(String.class, STRING_CONVERTER);
         converterMap.put(Date.class, DATE_CONVERTER);
+        converterMap.put(Locale.class, LOCALE_CONVERTER);
         converterMap.put(Serializable.class, SERIALIZABLE_CONVERTER);
     }
 
