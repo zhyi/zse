@@ -259,12 +259,6 @@ public class GuiParser {
                     }
             }
         }
-        for (final Method m : controllerClass.getDeclaredMethods()) {
-            if (m.isAnnotationPresent(PostParseGui.class)) {
-                ReflectionUtils.invoke(m, controller);
-                break;
-            }
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -878,10 +872,7 @@ public class GuiParser {
      * and names matching the elements declared in the GUI XML. If the GUI XML
      * has an element with the tag name as the simple name of the controller's
      * class, the element represents the GUI controller itself. This is typically
-     * useful when the controller is a component. Additionally, one controller's
-     * method can be annotated with {@link PostParseGui}, so that it is automatically
-     * called after the GUI has been parsed. If more than one methods are annotated
-     * with {@link PostParseGui}, only the first found one is called.
+     * useful when the controller is a component.
      * <p>
      * The {@code existingBeanMap} may contain already created objects. While
      * parsing an element, if the element's ID is already associated with a object
