@@ -649,9 +649,10 @@ public class GuiParser {
         Class<?> beanClass = importMap.get(name);
         if (beanClass == null) {
             for (String starImport : starImports) {
-                String fqcn = starImport.replace('.', '/') + name + ".class";
-                if (controllerLoader.getResource(starImport + name) != null) {
-                    beanClass = ReflectionUtils.getClass(fqcn, true, controllerLoader);
+                String path = starImport.replace('.', '/') + name + ".class";
+                if (controllerLoader.getResource(path) != null) {
+                    beanClass = ReflectionUtils.getClass(
+                            starImport + name, true, controllerLoader);
                     importMap.put(name, beanClass);
                     break;
                 }
