@@ -133,6 +133,11 @@ public abstract class CachedOptionManager implements OptionManager {
     }
 
     @Override
+    public ConverterManager getConverterManager() {
+        return converterManager;
+    }
+
+    @Override
     public void store() throws IOException {
         Map<String, String> stringOptionMap = new HashMap<>();
         for (Entry<Option<?>, Object> e : optionMap.entrySet()) {

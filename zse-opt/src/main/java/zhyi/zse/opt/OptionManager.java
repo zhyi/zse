@@ -17,6 +17,7 @@
 package zhyi.zse.opt;
 
 import java.io.IOException;
+import zhyi.zse.conversion.ConverterManager;
 
 /**
  * This interface defines a simple and type-safe way to manage application options.
@@ -94,6 +95,14 @@ public interface OptionManager {
      */
     <T> void removeOptionChangeListener(Option<T> option,
             OptionChangeListener<? super T> listener);
+
+    /**
+     * Returns the converter manager for string-object conversion so that custom
+     * converters can be registered.
+     *
+     * @return The converter manager used in this option manager.
+     */
+    ConverterManager getConverterManager();
 
     /**
      * Stores all managed options to some persistent place so that they can be
