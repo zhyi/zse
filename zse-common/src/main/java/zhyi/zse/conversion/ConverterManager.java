@@ -17,6 +17,9 @@
 package zhyi.zse.conversion;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URL;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +42,9 @@ import zhyi.zse.lang.ReflectionUtils;
  * <li>{@link String}.
  * <li>{@link Date}.
  * <li>{@link Locale}.
+ * <li>{@link URL}.
+ * <li>{@link URI}.
+ * <li>{@link InetAddress}.
  * <li>Enumeration types. Converters for these types are automatically
  * registered in method {@link #getConverter(Class)}.
  * <li>{@link Serializable}. The literal value of a serializable object is
@@ -64,6 +70,9 @@ public class ConverterManager {
     private static final Converter<String> STRING_CONVERTER = new StringConverter();
     private static final Converter<Date> DATE_CONVERTER = new DateConverter();
     private static final Converter<Locale> LOCALE_CONVERTER = new LocaleConverter();
+    private static final Converter<URL> URL_CONVERTER = new UrlConverter();
+    private static final Converter<URI> URI_CONVERTER = new UriConverter();
+    private static final Converter<InetAddress> INET_ADDRESS_CONVERTER = new InetAddressConverter();
     private static final Converter<Serializable> SERIALIZABLE_CONVERTER = new SerializableConverter();
 
     private ConcurrentMap<Class<?>, Converter<?>> converterMap = new ConcurrentHashMap<>();
@@ -83,6 +92,9 @@ public class ConverterManager {
         converterMap.put(String.class, STRING_CONVERTER);
         converterMap.put(Date.class, DATE_CONVERTER);
         converterMap.put(Locale.class, LOCALE_CONVERTER);
+        converterMap.put(URL.class, URL_CONVERTER);
+        converterMap.put(URI.class, URI_CONVERTER);
+        converterMap.put(InetAddress.class, INET_ADDRESS_CONVERTER);
         converterMap.put(Serializable.class, SERIALIZABLE_CONVERTER);
     }
 
