@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
@@ -89,6 +88,7 @@ import zhyi.zse.conversion.AbstractConverter;
 import zhyi.zse.conversion.Converter;
 import zhyi.zse.conversion.ConverterManager;
 import zhyi.zse.i18n.FallbackLocaleControl;
+import zhyi.zse.lang.AbstractInvocationHandler;
 import zhyi.zse.lang.ReflectionUtils;
 import zhyi.zse.lang.StringUtils;
 import zhyi.zse.lang.StringUtils.DelimitationStyle;
@@ -612,12 +612,12 @@ public class GuiParser {
         }
 
         Object listener = Proxy.newProxyInstance(controllerLoader,
-                new Class<?>[] {lm.listenerClass}, new InvocationHandler() {
+                new Class<?>[] {lm.listenerClass}, new AbstractInvocationHandler() {
             @Override
-            public Object invoke(Object proxy, Method method, Object[] args) {
+            public Object invokeOthers(Object proxy, Method method, Object[] args) {
                 Method controllerMethod = methodMap.get(method);
                 if (controllerMethod != null) {
-                    ReflectionUtils.invoke(method, controller, args);
+                    ReflectionUtils.invoke(controllerMethod, controller, args);
                 }
                 return null;
             }
