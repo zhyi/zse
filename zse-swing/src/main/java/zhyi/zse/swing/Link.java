@@ -22,6 +22,8 @@ import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.URI;
 import javax.swing.Icon;
@@ -43,6 +45,7 @@ public class Link extends JButton {
     public static final String VISITED_STYLE_KEY = "visitedStyle";
 
     private boolean visited;
+    private String styledText;
 
     /**
      * Constructs a new link.
@@ -52,7 +55,17 @@ public class Link extends JButton {
     }
 
     /**
-     * Constructs a new link with text and a target URI.
+     * Constructs a new link with the target URI and the URI's string representation
+     * as the text.
+     *
+     * @param uri 
+     */
+    public Link(URI uri) {
+        this(uri.toString(), null, uri);
+    }
+
+    /**
+     * Constructs a new link with the text and target URI.
      *
      * @param text The link's text.
      * @param uri  The link's target URI.
@@ -62,7 +75,7 @@ public class Link extends JButton {
     }
 
     /**
-     * Constructs a new link with an icon and the target URI.
+     * Constructs a new link with the icon and the target URI.
      *
      * @param icon The link's icon.
      * @param uri  The link's target URI.
@@ -72,7 +85,7 @@ public class Link extends JButton {
     }
 
     /**
-     * Constructs a new link with text, an icon and a target URI.
+     * Constructs a new link with the text, icon and target URI.
      *
      * @param text The link's text.
      * @param icon The link's icon.
@@ -109,6 +122,12 @@ public class Link extends JButton {
                     revalidate();
                     repaint();
                 }
+            }
+        });
+        addPropertyChangeListener("UI", new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                styledText = null;
             }
         });
         getModel().addChangeListener(new ChangeListener() {
@@ -234,9 +253,14 @@ public class Link extends JButton {
         if (visited) {
             style += getVisitedStyle();
         }
-        BasicHTML.updateRenderer(this, String.format(
-                "<html><div style=\"%s\">%s</div>", style, text));
 
-        super.paintComponent(g);
+        String newStyledText = String.format(
+                "<html><div style=\"%s\">%s</div>", style, text);
+        if (!newStyledText.equals(styledText)) {
+            styledText = newStyledText;
+            BasicHTML.updateRenderer(this, styledText);
+        } else {
+            super.paintComponent(g);
+        }
     }
 }
