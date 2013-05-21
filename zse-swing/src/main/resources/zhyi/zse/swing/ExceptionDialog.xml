@@ -33,7 +33,7 @@
         <layout autoCreateContainerGaps="true" autoCreateGaps="true">
             <group type="parallel" alignment="CENTER">
                 <group type="sequential">
-                    <component ref="errorIconLabel"/>
+                    <component ref="iconLabel"/>
                     <preferredGap type="UNRELATED"/>
                     <group type="parallel">
                         <component ref="messageLabel"/>
@@ -44,7 +44,7 @@
             </group>
             <group type="sequential">
                 <group type="parallel">
-                    <component ref="errorIconLabel"/>
+                    <component ref="iconLabel"/>
                     <group type="sequential">
                         <component ref="messageLabel" min="#{GroupLayout.PREFERRED_SIZE}"
                                    pref="#{GroupLayout.PREFERRED_SIZE}" max="#{GroupLayout.PREFERRED_SIZE}"/>
