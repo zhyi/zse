@@ -52,6 +52,9 @@ import javax.swing.PopupFactory;
 import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.plaf.nimbus.AbstractRegionPainter;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import javax.swing.text.JTextComponent;
@@ -70,7 +73,8 @@ import zhyi.zse.lang.ReflectionUtils;
  * <b>Dynamic Look And Feel</b>
  * <p>
  * If the look and feel is changed by invoking {@link UIManager#setLookAndFeel},
- * it immediately takes effect.
+ * it immediately takes effect. Additionally, the default look and feel is set
+ * to system look and feel, instead of the Metal look and feel.
  * <p>
  * <b>Dynamic Locale</b>
  * <p>
@@ -111,6 +115,7 @@ public abstract class SwingApplication {
             = ReflectionUtils.getDeclaredField(JComponent.class, "ui");
     private static final Map<JTextComponent, JPopupMenu>
             POPUP_MAP = new WeakHashMap<>();
+    private static final String METAL_THEME_KEY = "metalTheme";
 
     private static boolean lafMonitored;
     private static boolean localeMonitored;
@@ -155,10 +160,35 @@ public abstract class SwingApplication {
      * @param args The command line arguments.
      */
     public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            fixSwingIssues();
+        } catch (final ReflectiveOperationException
+                | UnsupportedLookAndFeelException ex) {
+            SwingUtils.runOnEdt(new Runnable() {
+                @Override
+                public void run() {
+                    ExceptionDialog.showWarning(ex, null);
+                }
+            });
+        }
+        monitorLaf();
+        monitorComponents();
+        addPopupShadows();
+        addDefaultTextPopupMenu();
+
         final SwingApplication app = ServiceLoader.load(
                 SwingApplication.class).iterator().next();
+        app.preprocess(args);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                app.showGui();
+            }
+        });
+    }
 
-        // Add drop shadows to popup components.
+    private static void addPopupShadows() {
         PopupFactory.setSharedInstance(new PopupFactory() {
             @Override
             public Popup getPopup(Component owner, Component contents, int x, int y) {
@@ -179,98 +209,102 @@ public abstract class SwingApplication {
                 return popup;
             }
         });
+    }
 
-        // Monitor L&F change.
+    private static void fixSwingIssues() {
+        // Double the group layout's indent distance.
+        LayoutStyle.setInstance(null);
+        final LayoutStyle lafLayoutStyle = LayoutStyle.getInstance();
+        LayoutStyle.setInstance(new LayoutStyle() {
+            @Override
+            public int getPreferredGap(JComponent component1,
+                    JComponent component2, ComponentPlacement type,
+                    int position, Container parent) {
+                if (type == ComponentPlacement.INDENT) {
+                    return 2 * lafLayoutStyle.getPreferredGap(
+                            component1, component2,
+                            ComponentPlacement.UNRELATED,
+                            position, parent);
+                } else {
+                    return lafLayoutStyle.getPreferredGap(
+                            component1, component2, type, position, parent);
+                }
+            }
+
+            @Override
+            public int getContainerGap(JComponent component,
+                    int position, Container parent) {
+                return lafLayoutStyle.getContainerGap(component, position, parent);
+            }
+        });
+
+        // Fix specific L&F issues.
+        UIDefaults uid = UIManager.getLookAndFeelDefaults();
+        switch (UIManager.getLookAndFeel().getName()) {
+            case "Windows":
+                if (Double.parseDouble(System.getProperty("os.version")) >= 6.0
+                        && Boolean.TRUE.equals(Toolkit.getDefaultToolkit()
+                                .getDesktopProperty("win.xpstyle.themeActive"))) {
+                    uid.put("ComboBox.border", null);
+                    uid.put("Menu.border", BorderFactory.createEmptyBorder(0, 3, 0, 3));
+                    uid.put("TextArea.inactiveBackground",
+                            UIManager.get("TextArea.disabledBackground"));
+                    uid.put("EditorPane.inactiveBackground",
+                            UIManager.get("EditorPane.disabledBackground"));
+                    uid.put("TextPane.inactiveBackground",
+                            UIManager.get("TextPane.disabledBackground"));
+                }
+                break;
+            case "Nimbus":
+                uid.put("TextField[Enabled].backgroundPainter",
+                        new NimbusTextBackgroundPainter((AbstractRegionPainter)
+                                UIManager.get("TextField[Enabled].backgroundPainter")));
+                uid.put("FormattedTextField[Enabled].backgroundPainter",
+                        new NimbusTextBackgroundPainter(
+                                (AbstractRegionPainter) UIManager.get(
+                                "FormattedTextField[Enabled].backgroundPainter")));
+                uid.put("PasswordField[Enabled].backgroundPainter",
+                        new NimbusTextBackgroundPainter((AbstractRegionPainter)
+                                UIManager.get("PasswordField[Enabled].backgroundPainter")));
+                uid.put("TextArea[Enabled].backgroundPainter",
+                        new NimbusTextBackgroundPainter((AbstractRegionPainter)
+                                UIManager.get("TextArea[Enabled].backgroundPainter")));
+                uid.put("TextArea[Enabled+NotInScrollPane].backgroundPainter",
+                        new NimbusTextBackgroundPainter((AbstractRegionPainter)
+                                UIManager.get("TextArea[Enabled+NotInScrollPane].backgroundPainter")));
+                uid.put("EditorPane[Enabled].backgroundPainter",
+                        new NimbusTextBackgroundPainter((AbstractRegionPainter)
+                                UIManager.get("EditorPane[Enabled].backgroundPainter")));
+                uid.put("TextPane[Enabled].backgroundPainter",
+                        new NimbusTextBackgroundPainter((AbstractRegionPainter)
+                                UIManager.get("TextPane[Enabled].backgroundPainter")));
+        }
+    }
+
+    private static void monitorLaf() {
         UIManager.addPropertyChangeListener(new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 if (evt.getPropertyName().equals("lookAndFeel")) {
-                    lafMonitored = true;
+                    fixSwingIssues();
 
                     // Update components that have been added to windows.
                     // Other components will be handled later when they are
                     // added to a container.
-                    for (Window win : Window.getWindows()) {
-                        SwingUtilities.updateComponentTreeUI(win);
-                    }
-
-                    // Double the group layout's indent distance.
-                    LayoutStyle.setInstance(null);
-                    final LayoutStyle lafLayoutStyle = LayoutStyle.getInstance();
-                    LayoutStyle.setInstance(new LayoutStyle() {
-                        @Override
-                        public int getPreferredGap(JComponent component1,
-                                JComponent component2, ComponentPlacement type,
-                                int position, Container parent) {
-                            if (type == ComponentPlacement.INDENT) {
-                                return 2 * lafLayoutStyle.getPreferredGap(
-                                        component1, component2,
-                                        ComponentPlacement.UNRELATED,
-                                        position, parent);
-                            } else {
-                                return lafLayoutStyle.getPreferredGap(
-                                        component1, component2, type,
-                                        position, parent);
-                            }
+                    Window[] windows = Window.getWindows();
+                    if (windows.length > 0) {
+                        for (Window window : windows) {
+                            SwingUtilities.updateComponentTreeUI(window);
                         }
-
-                        @Override
-                        public int getContainerGap(JComponent component,
-                                int position, Container parent) {
-                            return lafLayoutStyle.getContainerGap(
-                                    component, position, parent);
-                        }
-                    });
-
-                    // Fix specific L&F issues.
-                    UIDefaults uid = UIManager.getLookAndFeelDefaults();
-                    switch (UIManager.getLookAndFeel().getName()) {
-                        case "Windows":
-                            if (Double.parseDouble(System.getProperty("os.version")) >= 6.0
-                                    && Boolean.TRUE.equals(Toolkit.getDefaultToolkit()
-                                            .getDesktopProperty("win.xpstyle.themeActive"))) {
-                                uid.put("ComboBox.border", null);
-                                uid.put("Menu.border", BorderFactory.createEmptyBorder(0, 3, 0, 3));
-                                uid.put("TextArea.inactiveBackground",
-                                        UIManager.get("TextArea.disabledBackground"));
-                                uid.put("EditorPane.inactiveBackground",
-                                        UIManager.get("EditorPane.disabledBackground"));
-                                uid.put("TextPane.inactiveBackground",
-                                        UIManager.get("TextPane.disabledBackground"));
-                            }
-                            break;
-                        case "Nimbus":
-                            uid.put("TextField[Enabled].backgroundPainter",
-                                    new NimbusTextBackgroundPainter((AbstractRegionPainter)
-                                            UIManager.get("TextField[Enabled].backgroundPainter")));
-                            uid.put("FormattedTextField[Enabled].backgroundPainter",
-                                    new NimbusTextBackgroundPainter(
-                                            (AbstractRegionPainter) UIManager.get(
-                                            "FormattedTextField[Enabled].backgroundPainter")));
-                            uid.put("PasswordField[Enabled].backgroundPainter",
-                                    new NimbusTextBackgroundPainter((AbstractRegionPainter)
-                                            UIManager.get("PasswordField[Enabled].backgroundPainter")));
-                            uid.put("TextArea[Enabled].backgroundPainter",
-                                    new NimbusTextBackgroundPainter((AbstractRegionPainter)
-                                            UIManager.get("TextArea[Enabled].backgroundPainter")));
-                            uid.put("TextArea[Enabled+NotInScrollPane].backgroundPainter",
-                                    new NimbusTextBackgroundPainter((AbstractRegionPainter)
-                                            UIManager.get("TextArea[Enabled+NotInScrollPane].backgroundPainter")));
-                            uid.put("EditorPane[Enabled].backgroundPainter",
-                                    new NimbusTextBackgroundPainter((AbstractRegionPainter)
-                                            UIManager.get("EditorPane[Enabled].backgroundPainter")));
-                            uid.put("TextPane[Enabled].backgroundPainter",
-                                    new NimbusTextBackgroundPainter((AbstractRegionPainter)
-                                            UIManager.get("TextPane[Enabled].backgroundPainter")));
+                        lafMonitored = true;
                     }
                 }
             }
         });
+    }
 
-        Toolkit tk = Toolkit.getDefaultToolkit();
-
-        // Monitor containers to handle newly added components.
-        tk.addAWTEventListener(new AWTEventListener() {
+    private static void monitorComponents() {
+        Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
             @Override
             public void eventDispatched(AWTEvent event) {
                 ContainerEvent ce = (ContainerEvent) event;
@@ -285,25 +319,32 @@ public abstract class SwingApplication {
                         }
                     }
 
-                    // Update locale as needed.
-                    if (localeMonitored) {
-                        if (!c.getLocale().equals(Locale.getDefault())) {
-                            c.setLocale(Locale.getDefault());
+                    // Update L&F as needed.
+                    if (lafMonitored && c instanceof JComponent) {
+                        JComponent jc = (JComponent) c;
+                        if (!UIManager.getDefaults().getUIClass(jc.getUIClassID())
+                                .equals(ReflectionUtils.getValue(UI, jc).getClass())) {
+                            jc.updateUI();
+                        } else if (UIManager.getLookAndFeel().getName().equals("Metal")) {
+                            MetalTheme mt = MetalLookAndFeel.getCurrentTheme();
+                            if (jc.getClientProperty(METAL_THEME_KEY) != mt) {
+                                jc.updateUI();
+                                jc.putClientProperty(METAL_THEME_KEY, mt);
+                            }
                         }
                     }
 
-                    // Update L&F as needed.
-                    if (c instanceof JComponent) {
-                        if (lafMonitored) {
-                            ((JComponent) c).updateUI();
-                        }
+                    // Update locale as needed.
+                    if (localeMonitored && !c.getLocale().equals(Locale.getDefault())) {
+                        c.setLocale(Locale.getDefault());
                     }
                 }
             }
         }, AWTEvent.CONTAINER_EVENT_MASK);
+    }
 
-        // Enable default popup menu for text components.
-        tk.addAWTEventListener(new AWTEventListener() {
+    private static void addDefaultTextPopupMenu() {
+        Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
             // The indecies of menu items that write contents to the component,
             // such as undo, redo, paste, etc. They are visible conditionally.
             private int[] indecies = {0, 1, 2, 3, 5, 6, 8, 9, 11, 12};
@@ -314,10 +355,8 @@ public abstract class SwingApplication {
                 if (me.isPopupTrigger()) {
                     if (me.getComponent() instanceof JTextComponent) {
                         JTextComponent tc = (JTextComponent) me.getComponent();
-
                         if (tc.isEnabled() && tc.getComponentPopupMenu() == null) {
                             JPopupMenu popupMenu = POPUP_MAP.get(tc);
-
                             if (popupMenu == null) {
                                 tc.putClientProperty(ContextActionHandler.KEY,
                                         new TextContextActionHandler(tc));
@@ -380,14 +419,6 @@ public abstract class SwingApplication {
                 });
             }
         }, AWTEvent.MOUSE_EVENT_MASK);
-
-        app.preprocess(args);
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                app.showGui();
-            }
-        });
     }
 
     private static void setComponentTreeLocale(Component c, Locale l) {
