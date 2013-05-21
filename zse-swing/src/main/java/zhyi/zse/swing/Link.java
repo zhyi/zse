@@ -16,39 +16,32 @@
  */
 package zhyi.zse.swing;
 
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Desktop;
-import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.font.TextAttribute;
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.plaf.basic.BasicHTML;
 
 /**
  * This class simulates a hyper link with a button.
- * <p>
- * It is recommended against to use HTML to format the link's text. Instead,
- * use the {@code setXxxStyle} methods to control the display styles.
  *
  * @author Zhao Yi
  */
 @SuppressWarnings("serial")
 public class Link extends JButton {
-    private URI uri;
-    private Font normalFont;
-    private Font hoveredFont;
-    private Font visitedFont;
+    public static final String URI_KEY = "uri";
+    public static final String NORMAL_STYLE_KEY = "normalStyle";
+    public static final String HOVERED_STYLE_KEY = "hoveredStyle";
+    public static final String VISITED_STYLE_KEY = "visitedStyle";
+
     private boolean visited;
 
     /**
@@ -85,29 +78,27 @@ public class Link extends JButton {
      * @param icon The link's icon.
      * @param uri  The link's target URI.
      */
+    @SuppressWarnings("OverridableMethodCallInConstructor")
     public Link(String text, Icon icon, URI uri) {
         super(text, icon);
-        this.uri = uri;
 
-        Map<TextAttribute, Object> attrMap = new HashMap<>();
-        attrMap.put(TextAttribute.FOREGROUND, Color.BLUE);
-        normalFont = getFont().deriveFont(attrMap);
-        attrMap.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
-        hoveredFont = getFont().deriveFont(attrMap);
-        attrMap.clear();
-        attrMap.put(TextAttribute.FOREGROUND, Color.MAGENTA);
-        visitedFont = getFont().deriveFont(attrMap);
+        setUri(uri);
+        setNormalStyle("color: blue;");
+        setHoveredStyle("text-decoration: underline;");
+        setVisitedStyle("color: purple;");
 
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setContentAreaFilled(false);
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        setMargin(new Insets(0, 0, 0, 0));
+        setBorderPainted(false);
 
         addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (Link.this.uri != null) {
+                URI uri = getUri();
+                if (uri != null) {
                     try {
-                        Desktop.getDesktop().browse(Link.this.uri);
+                        Desktop.getDesktop().browse(uri);
                     } catch (IOException ex) {
                         ExceptionDialog.showError(ex, Link.this);
                     }
@@ -131,104 +122,121 @@ public class Link extends JButton {
 
     /**
      * Returns this link's target URI.
+     * <p>
+     * This property is the client property mapping by {@link #URI_KEY URI_KEY}.
      *
      * @return This link's target URI.
      */
     public URI getUri() {
-        return uri;
+        return (URI) getClientProperty(URI_KEY);
     }
 
     /**
-     * Sets the link's target URI.
+     * Sets this link's target URI.
+     * <p>
+     * This property is the client property mapping by {@link #URI_KEY URI_KEY}.
      *
-     * @param uri This link's new target URI.
+     * @param uri The new target URI for this link.
      */
     public void setUri(URI uri) {
-        if (!Objects.equals(this.uri, uri)) {
-            URI oldUri = this.uri;
-            this.uri = uri;
-            firePropertyChange("uri", oldUri, uri);
-        }
+        putClientProperty(URI_KEY, uri);
     }
 
     /**
-     * Returns the normal font of the link.
+     * Returns this link's normal style.
+     * <p>
+     * This property is the client property mapping by {@link #NORMAL_STYLE_KEY
+     * NORMAL_STYLE_KEY}.
      *
-     * @return The normal font of the link.
+     * @return This link's normal style.
      */
-    public Font getNormalFont() {
-        return normalFont;
+    public String getNormalStyle() {
+        return (String) getClientProperty(NORMAL_STYLE_KEY);
     }
 
     /**
-     * Sets the normal font of the link.
+     * Sets this link's normal style.
+     * <p>
+     * This property is the client property mapping by {@link #NORMAL_STYLE_KEY
+     * NORMAL_STYLE_KEY}.
      *
-     * @param normalFont The normal font of the link.
+     * @param normalStyle The new normal style for this link.
      */
-    public void setNormalFont(Font normalFont) {
-        if (!this.normalFont.equals(normalFont)) {
-            this.normalFont = normalFont;
-            revalidate();
-            repaint();
-        }
+    public void setNormalStyle(String normalStyle) {
+        putClientProperty(NORMAL_STYLE_KEY, normalStyle);
+        revalidate();
+        repaint();
     }
 
     /**
-     * Returns the font to be used when the link is hovered.
+     * Returns this link's style when the mouse is hovered.
+     * <p>
+     * This property is the client property mapping by {@link #HOVERED_STYLE_KEY
+     * HOVERED_STYLE_KEY}.
      *
-     * @return The font to be used when the link is hovered.
+     * @return This link's hovered style.
      */
-    public Font getHoveredFont() {
-        return hoveredFont;
+    public String getHoveredStyle() {
+        return (String) getClientProperty(HOVERED_STYLE_KEY);
     }
 
     /**
-     * Sets the font to be used when the link is hovered.
+     * Sets this link's style when the mouse is hovered.
+     * <p>
+     * This property is the client property mapping by {@link #VISITED_STYLE_KEY
+     * VISITED_STYLE_KEY}.
      *
-     * @param hoveredFont The font to be used when the link is hovered.
+     * @param hoveredStyle The new hovered style for this link.
      */
-    public void setHoveredFont(Font hoveredFont) {
-        if (!this.hoveredFont.equals(hoveredFont)) {
-            this.hoveredFont = hoveredFont;
-            revalidate();
-            repaint();
-        }
+    public void setHoveredStyle(String hoveredStyle) {
+        putClientProperty(HOVERED_STYLE_KEY, hoveredStyle);
+        revalidate();
+        repaint();
     }
 
     /**
-     * Returns the font to be used when the link has been visited.
+     * Returns this link's style when it has already been visited.
+     * <p>
+     * This property is the client property mapping by {@link #VISITED_STYLE_KEY
+     * VISITED_STYLE_KEY}.
      *
-     * @return The font to be used when the link has been visited.
+     * @return This link's visited style.
      */
-    public Font getVisitedFont() {
-        return visitedFont;
+    public String getVisitedStyle() {
+        return (String) getClientProperty(VISITED_STYLE_KEY);
     }
 
     /**
-     * Sets the font to be used when the link has been visited.
+     * Sets this link's style when it has already been visited.
+     * <p>
+     * This property is the client property mapping by {@link #VISITED_STYLE_KEY
+     * VISITED_STYLE_KEY}.
      *
-     * @param visitedFont The font to be used when the link has been visited.
+     * @param visitedStyle The new visited style for this link.
      */
-    public void setVisitedFont(Font visitedFont) {
-        if (!this.visitedFont.equals(visitedFont)) {
-            this.visitedFont = visitedFont;
-            revalidate();
-            repaint();
-        }
+    public void setVisitedStyle(String visitedStyle) {
+        putClientProperty(VISITED_STYLE_KEY, visitedStyle);
+        revalidate();
+        repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        boolean rollover = getModel().isRollover();
-        if (visited && rollover) {
-            setFont(hoveredFont.deriveFont(visitedFont.getAttributes()));
-        } else if (visited && !rollover) {
-            setFont(visitedFont);
-        } else if (!visited && rollover) {
-            setFont(hoveredFont);
-        } else {
-            setFont(normalFont);
+        String text = getText();
+        if (text == null) {
+            text = "";
         }
-        super.printComponent(g);
+
+        String style = getNormalStyle();
+        if (model.isRollover()) {
+            style += getHoveredStyle();
+        }
+        if (visited) {
+            style += getVisitedStyle();
+        }
+        BasicHTML.updateRenderer(this, String.format(
+                "<html><div style=\"%s\">%s</div>", style, text));
+
+        super.paintComponent(g);
     }
 }
