@@ -17,6 +17,10 @@
 package zhyi.zse.opt;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import zhyi.zse.conversion.ConverterManager;
 
 /**
@@ -24,33 +28,16 @@ import zhyi.zse.conversion.ConverterManager;
  *
  * @author Zhao Yi
  */
-public interface OptionManager {
-    /**
-     * Gets the value of an option.
-     * <p>
-     * If the option is already associated with a value, that value is returned.
-     * Otherwise, if the option was previously stored, the stored value is
-     * returned. Failing both, the option's default value is returned.
-     *
-     * @param <T> The option's value type.
-     *
-     * @param option The option for which to get the value.
-     *
-     * @return The value of the option.
-     */
-    <T> T get(Option<T> option);
+public abstract class OptionManager {
+    protected ConcurrentMap<Option<?>, List<OptionChangeListener<?>>> specificListenerMap;
+    protected List<OptionChangeListener<Object>> globalListeners;
+    protected ConverterManager converterManager;
 
-    /**
-     * Associates an option with a value.
-     * <p>
-     * If the value is really changed, an option change event is fired.
-     *
-     * @param <T> The option's value type.
-     *
-     * @param option The option with which the value is to be associated.
-     * @param value  The value to be associated with the option.
-     */
-    <T> void set(Option<T> option, T value);
+    protected OptionManager() {
+        specificListenerMap = new ConcurrentHashMap<>();
+        globalListeners = new CopyOnWriteArrayList<>();
+        converterManager = new ConverterManager();
+    }
 
     /**
      * Adds an option change listener to receive option change events for all
@@ -58,7 +45,9 @@ public interface OptionManager {
      *
      * @param listener The listener to be added.
      */
-    void addOptionChangeListener(OptionChangeListener<Object> listener);
+    public void addOptionChangeListener(OptionChangeListener<Object> listener) {
+        globalListeners.add(listener);
+    }
 
     /**
      * Adds an option change listener to receive option change events
@@ -69,7 +58,18 @@ public interface OptionManager {
      * @param option   The option to be listened on.
      * @param listener The listener to be added.
      */
-    <T> void addOptionChangeListener(Option<T> option, OptionChangeListener<? super T> listener);
+    public <T> void addOptionChangeListener(
+            Option<T> option, OptionChangeListener<? super T> listener) {
+        List<OptionChangeListener<?>> specificListeners = specificListenerMap.get(option);
+        if (specificListeners == null) {
+            List<OptionChangeListener<?>> listeners = new CopyOnWriteArrayList<>();
+            specificListeners = specificListenerMap.putIfAbsent(option, listeners);
+            if (specificListeners == null) {
+                specificListeners = listeners;
+            }
+        }
+        specificListeners.add(listener);
+    }
 
     /**
      * Removes an option change listener for all managed options.
@@ -80,7 +80,9 @@ public interface OptionManager {
      *
      * @param listener The listener to be removed.
      */
-    void removeOptionChangeListener(OptionChangeListener<Object> listener);
+    public void removeOptionChangeListener(OptionChangeListener<Object> listener) {
+        globalListeners.remove(listener);
+    }
 
     /**
      * Removes an option change listener for a specific option.
@@ -93,8 +95,13 @@ public interface OptionManager {
      * @param option   The option that was listened on.
      * @param listener The listener to be removed.
      */
-    <T> void removeOptionChangeListener(Option<T> option,
-            OptionChangeListener<? super T> listener);
+    public <T> void removeOptionChangeListener(Option<T> option,
+            OptionChangeListener<? super T> listener) {
+        List<OptionChangeListener<?>> listeners = specificListenerMap.get(option);
+        if (listeners != null) {
+            listeners.remove(listener);
+        }
+    }
 
     /**
      * Returns the converter manager for string-object conversion so that custom
@@ -102,7 +109,55 @@ public interface OptionManager {
      *
      * @return The converter manager used in this option manager.
      */
-    ConverterManager getConverterManager();
+    public ConverterManager getConverterManager() {
+        return converterManager;
+    }
+
+    /**
+     * Returns the current value of an option, or its default value if the current
+     * value is {@code null}.
+     * <p>
+     * This method is typically useful to avoid null checks. However, it may
+     * still return {@code null} when both the current and default value is
+     * {@code null}. The best practice is to specify non-null default values.
+     *
+     * @param <T> The option's value type.
+     *
+     * @param option The option for which to get the value.
+     *
+     * @return The option's current or default value.
+     */
+    public <T> T getNonNullOrDefault(Option<T> option) {
+        T value = get(option);
+        return value == null ? option.getDefaultValue() : value;
+    }
+
+    /**
+     * Returns the current value of an option.
+     * <p>
+     * If the option is already associated with a value, that value is returned.
+     * Otherwise, if the option was previously stored, the stored value is
+     * returned. Failing both, the option's default value is returned.
+     *
+     * @param <T> The option's value type.
+     *
+     * @param option The option for which to get the value.
+     *
+     * @return The option's current value.
+     */
+    public abstract <T> T get(Option<T> option);
+
+    /**
+     * Associates an option with a value.
+     * <p>
+     * If the value is really changed, an option change event is fired.
+     *
+     * @param <T> The option's value type.
+     *
+     * @param option The option with which the value is to be associated.
+     * @param value  The value to be associated with the option.
+     */
+    public abstract <T> void set(Option<T> option, T value);
 
     /**
      * Stores all managed options to some persistent place so that they can be
@@ -110,5 +165,5 @@ public interface OptionManager {
      *
      * @throws IOException If an I/O error occurs.
      */
-    void store() throws IOException;
+    public abstract void store() throws IOException;
 }

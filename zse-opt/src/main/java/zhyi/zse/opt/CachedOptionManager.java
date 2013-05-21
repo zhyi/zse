@@ -25,9 +25,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import zhyi.zse.conversion.Converter;
-import zhyi.zse.conversion.ConverterManager;
 
 /**
  * This class provides a skeletal implementation of {@link OptionManager}
@@ -36,7 +34,7 @@ import zhyi.zse.conversion.ConverterManager;
  *
  * @author Zhao Yi
  */
-public abstract class CachedOptionManager implements OptionManager {
+public abstract class CachedOptionManager extends OptionManager {
     /**
      * Holder for {@code null} due to {@link ConcurrentHashMap} does not allow
      * {@code null} values.
@@ -44,18 +42,12 @@ public abstract class CachedOptionManager implements OptionManager {
     private static final Object NULL = new Object();
 
     private ConcurrentMap<Option<?>, Object> optionMap;
-    private ConcurrentMap<Option<?>, List<OptionChangeListener<?>>> specificListenerMap;
-    private List<OptionChangeListener<Object>> globalListeners;
-    private ConverterManager converterManager;
 
     /**
      * Constructs a new cached option manager.
      */
     protected CachedOptionManager() {
         optionMap = new ConcurrentHashMap<>();
-        specificListenerMap = new ConcurrentHashMap<>();
-        globalListeners = new CopyOnWriteArrayList<>();
-        converterManager = new ConverterManager();
     }
 
     @Override
@@ -97,44 +89,6 @@ public abstract class CachedOptionManager implements OptionManager {
                 }
             }
         }
-    }
-
-    @Override
-    public void addOptionChangeListener(OptionChangeListener<Object> listener) {
-        globalListeners.add(listener);
-    }
-
-    @Override
-    public <T> void addOptionChangeListener(
-            Option<T> option, OptionChangeListener<? super T> listener) {
-        List<OptionChangeListener<?>> specificListeners = specificListenerMap.get(option);
-        if (specificListeners == null) {
-            List<OptionChangeListener<?>> listeners = new CopyOnWriteArrayList<>();
-            specificListeners = specificListenerMap.putIfAbsent(option, listeners);
-            if (specificListeners == null) {
-                specificListeners = listeners;
-            }
-        }
-        specificListeners.add(listener);
-    }
-
-    @Override
-    public void removeOptionChangeListener(OptionChangeListener<Object> listener) {
-        globalListeners.remove(listener);
-    }
-
-    @Override
-    public <T> void removeOptionChangeListener(
-            Option<T> option, OptionChangeListener<? super T> listener) {
-        List<OptionChangeListener<?>> listeners = specificListenerMap.get(option);
-        if (listeners != null) {
-            listeners.remove(listener);
-        }
-    }
-
-    @Override
-    public ConverterManager getConverterManager() {
-        return converterManager;
     }
 
     @Override
