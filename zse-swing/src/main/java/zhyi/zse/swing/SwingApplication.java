@@ -165,7 +165,7 @@ public abstract class SwingApplication {
             fixSwingIssues();
         } catch (final ReflectiveOperationException
                 | UnsupportedLookAndFeelException ex) {
-            SwingUtils.runOnEdt(new Runnable() {
+            SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
                     ExceptionDialog.showWarning(ex, null);
