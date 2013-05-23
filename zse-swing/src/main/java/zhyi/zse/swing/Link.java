@@ -124,9 +124,19 @@ public class Link extends JButton {
                 }
             }
         });
-        addPropertyChangeListener("UI", new PropertyChangeListener() {
+        addPropertyChangeListener(new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
+                switch (evt.getPropertyName()) {
+                    case NORMAL_STYLE_KEY:
+                    case HOVERED_STYLE_KEY:
+                    case VISITED_STYLE_KEY:
+                        revalidate();
+                        repaint();
+                        return;
+                    case "UI":
+                        styledText = null;
+                }
                 styledText = null;
             }
         });
@@ -183,8 +193,6 @@ public class Link extends JButton {
      */
     public void setNormalStyle(String normalStyle) {
         putClientProperty(NORMAL_STYLE_KEY, normalStyle);
-        revalidate();
-        repaint();
     }
 
     /**
@@ -209,8 +217,6 @@ public class Link extends JButton {
      */
     public void setHoveredStyle(String hoveredStyle) {
         putClientProperty(HOVERED_STYLE_KEY, hoveredStyle);
-        revalidate();
-        repaint();
     }
 
     /**
@@ -235,8 +241,6 @@ public class Link extends JButton {
      */
     public void setVisitedStyle(String visitedStyle) {
         putClientProperty(VISITED_STYLE_KEY, visitedStyle);
-        revalidate();
-        repaint();
     }
 
     @Override
