@@ -20,7 +20,6 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
 import javax.swing.JMenu;
-import javax.swing.SwingUtilities;
 
 /**
  * Utility methods for Swing.
