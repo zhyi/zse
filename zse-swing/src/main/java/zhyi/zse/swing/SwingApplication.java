@@ -322,14 +322,17 @@ public abstract class SwingApplication {
                     // Update L&F as needed.
                     if (lafMonitored && c instanceof JComponent) {
                         JComponent jc = (JComponent) c;
-                        if (!UIManager.getDefaults().getUIClass(jc.getUIClassID())
-                                .equals(ReflectionUtils.getValue(UI, jc).getClass())) {
-                            jc.updateUI();
-                        } else if (UIManager.getLookAndFeel().getName().equals("Metal")) {
-                            MetalTheme mt = MetalLookAndFeel.getCurrentTheme();
-                            if (jc.getClientProperty(METAL_THEME_KEY) != mt) {
+                        Object ui = ReflectionUtils.getValue(UI, jc);
+                        if (ui != null) {
+                            if (!ui.getClass().equals(
+                                    UIManager.getDefaults().getUIClass(jc.getUIClassID()))) {
                                 jc.updateUI();
-                                jc.putClientProperty(METAL_THEME_KEY, mt);
+                            } else if (UIManager.getLookAndFeel().getName().equals("Metal")) {
+                                MetalTheme mt = MetalLookAndFeel.getCurrentTheme();
+                                if (jc.getClientProperty(METAL_THEME_KEY) != mt) {
+                                    jc.updateUI();
+                                    jc.putClientProperty(METAL_THEME_KEY, mt);
+                                }
                             }
                         }
                     }
