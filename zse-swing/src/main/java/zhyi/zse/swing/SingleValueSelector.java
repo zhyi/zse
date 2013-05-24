@@ -25,6 +25,8 @@ import java.util.Objects;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.event.EventListenerList;
+import zhyi.zse.swing.event.SelectionChangeEvent;
+import zhyi.zse.swing.event.SelectionChangeListener;
 
 /**
  * Groups multiple buttons together as a single-value selector.
