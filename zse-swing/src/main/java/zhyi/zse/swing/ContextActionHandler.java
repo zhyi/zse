@@ -25,76 +25,89 @@ import javax.swing.undo.UndoManager;
  * {@link #KEY KEY}, corresponding actions can be created with the methods
  * defined by {@link ContextActionFactory}.
  * <p>
- * All operations are optional, and if any of the operation is not supported,
- * a {@link UnsupportedOperationException} is thrown.
+ * All methods in this class are empty or return {@code null}. Subclasses
+ * can selectively provide concrete implementations.
  *
  * @author Zhao Yi
  */
-public interface ContextActionHandler {
+public abstract class ContextActionHandler {
     /**
      * The client property's key for a handler instance.
      */
-    String KEY = "ContextActionHandler";
+    public static final String KEY = "ContextActionHandler";
 
     /**
      * Returns the undo manager for the undo and redo actions.
      *
-     * @return The undo manager for the undo and redo actions.
+     * @return The undo manager.
      */
-    UndoManager getUndoManager();
+    public UndoManager getUndoManager() {
+        return null;
+    }
 
     /**
      * Undos the last edit.
      */
-    void undo();
+    public void undo() {
+    }
 
     /**
      * Redos the last undone edit.
      */
-    void redo();
+    public void redo() {
+    }
 
     /**
      * Cuts the selected contents from the component to the clipboard.
      */
-    void cut();
+    public void cut() {
+    }
 
     /**
      * Copies the selected contents from the component to the clipboard.
      */
-    void copy();
+    public void copy() {
+    }
 
     /**
      * Pastes the contents from the clipboard to the component.
      */
-    void paste();
+    public void paste() {
+    }
 
     /**
      * Deletes the selected contents in the component.
      */
-    void delete();
+    public void delete() {
+    }
 
     /**
      * Selects all contents in the component.
      */
-    void selectAll();
+    public void selectAll() {
+    }
 
     /**
      * Cuts all contents from the component to the clipboard.
      */
-    void cutAll();
+    public void cutAll() {
+    }
 
     /**
      * Copies all contents from the component to the clipboard.
      */
-    void copyAll();
+    public void copyAll() {
+    }
 
     /**
      * Replaces all contents in the component by the contents in the clipboard.
      */
-    void replaceAll();
+    public void replaceAll() {
+    }
 
     /**
      * Deletes all contents in the component.
      */
-    void deleteAll();
+    public void deleteAll() {
+    }
 }

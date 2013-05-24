@@ -26,7 +26,7 @@ import javax.swing.undo.UndoManager;
  *
  * @author Zhao Yi
  */
-public class TextContextActionHandler implements ContextActionHandler {
+public class TextContextActionHandler extends ContextActionHandler {
     private JTextComponent tc;
     private UndoManager um;
 
