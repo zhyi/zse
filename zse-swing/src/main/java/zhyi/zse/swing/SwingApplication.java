@@ -168,7 +168,7 @@ public abstract class SwingApplication {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    ExceptionDialog.showWarning(ex, null);
+                    SwingUtils.showStackTrace(ex, false, null);
                 }
             });
         }

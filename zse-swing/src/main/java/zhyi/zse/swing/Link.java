@@ -113,7 +113,7 @@ public class Link extends JButton {
                     try {
                         Desktop.getDesktop().browse(uri);
                     } catch (IOException ex) {
-                        ExceptionDialog.showError(ex, Link.this);
+                        SwingUtils.showStackTrace(ex, false, Link.this);
                     }
                 }
 

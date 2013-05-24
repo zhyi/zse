@@ -20,6 +20,11 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
 import javax.swing.JMenu;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+import zhyi.zse.lang.ExceptionUtils;
 
 /**
  * Utility methods for Swing.
@@ -75,5 +80,23 @@ public final class SwingUtils {
      */
     public static void showWindow(Window window) {
         showWindow(window, window.getOwner());
+    }
+
+    /**
+     * Displays the stack trace of a throwable in a dialog.
+     *
+     * @param throwable The throwable to be displayed.
+     * @param severe    {@code true} for an error icon, or {@code false} for
+     *                  a warning icon.
+     * @param parent    The component of which the window ancestor is used as
+     *                  the owner of the stack trace dialog.
+     */
+    public static void showStackTrace(Throwable throwable,
+            boolean severe, Component parent) {
+        JTextArea stackTraceTextArea = new JTextArea(
+                ExceptionUtils.printStackTrace(throwable), 20, 80);
+        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(parent),
+                new JScrollPane(stackTraceTextArea), throwable.getClass().getName(),
+                severe ? JOptionPane.ERROR_MESSAGE : JOptionPane.WARNING_MESSAGE);
     }
 }
