@@ -23,7 +23,6 @@ import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 import zhyi.zse.lang.ExceptionUtils;
 
 /**
@@ -96,7 +95,7 @@ public final class SwingUtils {
         JTextArea stackTraceTextArea = new JTextArea(
                 ExceptionUtils.printStackTrace(throwable), 20, 80);
         stackTraceTextArea.setEditable(false);
-        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(parent),
+        JOptionPane.showMessageDialog(parent,
                 new JScrollPane(stackTraceTextArea), throwable.getClass().getName(),
                 severe ? JOptionPane.ERROR_MESSAGE : JOptionPane.WARNING_MESSAGE);
     }
