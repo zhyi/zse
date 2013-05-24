@@ -95,6 +95,7 @@ public final class SwingUtils {
             boolean severe, Component parent) {
         JTextArea stackTraceTextArea = new JTextArea(
                 ExceptionUtils.printStackTrace(throwable), 20, 80);
+        stackTraceTextArea.setEditable(false);
         JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(parent),
                 new JScrollPane(stackTraceTextArea), throwable.getClass().getName(),
                 severe ? JOptionPane.ERROR_MESSAGE : JOptionPane.WARNING_MESSAGE);
