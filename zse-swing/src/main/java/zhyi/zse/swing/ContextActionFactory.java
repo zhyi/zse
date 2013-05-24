@@ -20,6 +20,7 @@ import java.awt.event.ActionEvent;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ResourceBundle;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -36,6 +37,7 @@ import zhyi.zse.lang.ReflectionUtils;
  * @author Zhao Yi
  */
 public class ContextActionFactory {
+    private static final String BUNDLE = "zhyi.zse.swing.TextContextAction";
     private static final Map<String, Method> METHOD_MAP = new HashMap<>();
     static {
         for (Method m : ContextActionHandler.class.getMethods()) {
@@ -190,6 +192,10 @@ public class ContextActionFactory {
                 }
             }
         };
+        ResourceBundle rb = ResourceBundle.getBundle(BUNDLE);
+        if (rb.containsKey(name)) {
+            a.putValue(Action.NAME, rb.getString(name));
+        }
         a.putValue(Action.ACTION_COMMAND_KEY, name);
         KeyStroke ak = KeyStroke.getKeyStroke(ks);
         a.putValue(Action.ACCELERATOR_KEY, ak);
