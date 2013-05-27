@@ -29,9 +29,9 @@ public class ExceptionUtils {
     }
 
     /**
-     * Prints the stack trace of a throwable to a string.
+     * Prints the stack trace of an exception to a string.
      *
-     * @param t The throwable from which to get the stack trace.
+     * @param t The exception from which to get the stack trace.
      *
      * @return The stack trace as a string.
      */
@@ -42,10 +42,10 @@ public class ExceptionUtils {
     }
 
     /**
-     * Returns the root cause of a throwable, or {@code null} if it does not
+     * Returns the root cause of an exception, or {@code null} if it does not
      * have one.
      *
-     * @param t The throwable to be checked for root cause.
+     * @param t The exception to be checked for root cause.
      *
      * @return The root cause or {@code null}.
      *
