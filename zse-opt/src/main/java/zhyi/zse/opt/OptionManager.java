@@ -18,6 +18,7 @@ package zhyi.zse.opt;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -130,6 +131,36 @@ public abstract class OptionManager {
     public <T> T getNonNullOrDefault(Option<T> option) {
         T value = get(option);
         return value == null ? option.getDefaultValue() : value;
+    }
+
+    /**
+     * Fires an option change event to all interested listeners.
+     *
+     * @param <T>      The option's value type.
+     *
+     * @param option   The option of which the value has been changed.
+     * @param oldValue The option's old value.
+     * @param newValue The option's new value.
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> void fireOptionChanged(Option<T> option, T oldValue, T newValue) {
+        if (!Objects.equals(oldValue, newValue)) {
+            OptionChangeEvent<T> e = new OptionChangeEvent<>(
+                    this, option, oldValue, newValue);
+
+            if (!globalListeners.isEmpty()) {
+                for (OptionChangeListener<Object> listener : globalListeners) {
+                    listener.optionChanged(e);
+                }
+            }
+
+            List<OptionChangeListener<?>> specificListeners = specificListenerMap.get(option);
+            if (specificListeners != null) {
+                for (OptionChangeListener<?> listener : specificListeners) {
+                    ((OptionChangeListener<? super T>) listener).optionChanged(e);
+                }
+            }
+        }
     }
 
     /**

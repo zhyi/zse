@@ -19,10 +19,8 @@ package zhyi.zse.opt;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import zhyi.zse.conversion.Converter;
@@ -64,31 +62,12 @@ public abstract class CachedOptionManager extends OptionManager {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> void set(Option<T> option, T value) {
         Object oldValue = optionMap.put(option, wrapNull(value));
         if (oldValue == null) {
             oldValue = option.getDefaultValue();
         }
-        oldValue = unwrapNull(oldValue);
-
-        if (!Objects.equals(oldValue, value)) {
-            OptionChangeEvent<T> e = new OptionChangeEvent<>(
-                    this, option, option.getValueClass().cast(oldValue), value);
-
-            if (!globalListeners.isEmpty()) {
-                for (OptionChangeListener<Object> listener : globalListeners) {
-                    listener.optionChanged(e);
-                }
-            }
-
-            List<OptionChangeListener<?>> specificListeners = specificListenerMap.get(option);
-            if (specificListeners != null) {
-                for (OptionChangeListener<?> listener : specificListeners) {
-                    ((OptionChangeListener<? super T>) listener).optionChanged(e);
-                }
-            }
-        }
+        fireOptionChanged(option, option.getValueClass().cast(unwrapNull(oldValue)), value);
     }
 
     @Override
