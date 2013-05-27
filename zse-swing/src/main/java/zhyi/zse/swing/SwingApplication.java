@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.ServiceLoader;
 import java.util.WeakHashMap;
+import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
@@ -113,8 +114,9 @@ import zhyi.zse.lang.ReflectionUtils;
 public abstract class SwingApplication {
     private static final Field UI
             = ReflectionUtils.getDeclaredField(JComponent.class, "ui");
-    private static final Map<JTextComponent, JPopupMenu>
-            POPUP_MAP = new WeakHashMap<>();
+    private static final JPopupMenu TEXT_POPUP_MENU = new JPopupMenu();
+    private static final Map<JTextComponent, Action[]>
+            TEXT_POPUP_ACTION_MAP = new WeakHashMap<>();
     private static final String METAL_THEME_KEY = "metalTheme";
 
     private static boolean lafMonitored;
@@ -168,7 +170,7 @@ public abstract class SwingApplication {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    SwingUtils.showStackTrace(ex, false, null);
+                    SwingUtils.showStackTrace(null, ex, false);
                 }
             });
         }
@@ -348,10 +350,6 @@ public abstract class SwingApplication {
 
     private static void addDefaultTextPopupMenu() {
         Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
-            // The indecies of menu items that write contents to the component,
-            // such as undo, redo, paste, etc. They are visible conditionally.
-            private int[] indecies = {0, 1, 2, 3, 5, 6, 8, 9, 11, 12};
-
             @Override
             public void eventDispatched(AWTEvent event) {
                 MouseEvent me = (MouseEvent) event;
@@ -359,52 +357,75 @@ public abstract class SwingApplication {
                     if (me.getComponent() instanceof JTextComponent) {
                         JTextComponent tc = (JTextComponent) me.getComponent();
                         if (tc.isEnabled() && tc.getComponentPopupMenu() == null) {
-                            JPopupMenu popupMenu = POPUP_MAP.get(tc);
-                            if (popupMenu == null) {
-                                tc.putClientProperty(ContextActionHandler.KEY,
-                                        new TextContextActionHandler(tc));
-
-                                popupMenu = new JPopupMenu();
-                                POPUP_MAP.put(tc, popupMenu);
-
-                                popupMenu.add(ContextActionFactory.createUndoAction(tc));
-                                popupMenu.add(ContextActionFactory.createRedoAction(tc));
-                                popupMenu.addSeparator();
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createCutAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createCopyAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createPasteAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createDeleteAction(tc)));
-                                popupMenu.addSeparator();
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createSelectAllAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createCutAllAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createCopyAllAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createReplaceAllAction(tc)));
-                                addLocaleChangeListener(popupMenu.add(
-                                        ContextActionFactory.createDeleteAllAction(tc)));
-                            }
-
-                            // Update texts for undo and redo.
                             ContextActionHandler cah = (ContextActionHandler)
                                     tc.getClientProperty(ContextActionHandler.KEY);
-                            UndoManager um = cah.getUndoManager();
-                            ((JMenuItem) popupMenu.getComponent(0)).setText(
-                                    um.getUndoPresentationName());
-                            ((JMenuItem) popupMenu.getComponent(1)).setText(
-                                    um.getRedoPresentationName());
-
-                            boolean visible = tc.isEditable();
-                            for (int i = 0; i < indecies.length; i++) {
-                                popupMenu.getComponent(i).setVisible(visible);
+                            if (cah == null) {
+                                cah = new TextContextActionHandler(tc);
+                                tc.putClientProperty(ContextActionHandler.KEY, cah);
                             }
-                            popupMenu.show(tc, me.getX(), me.getY());
+
+                            Action[] popupActions = TEXT_POPUP_ACTION_MAP.get(tc);
+                            if (popupActions == null) {
+                                popupActions = new Action[11];
+                                popupActions[0] = ContextActionFactory.createUndoAction(tc);
+                                popupActions[1] = ContextActionFactory.createRedoAction(tc);
+                                popupActions[2] = ContextActionFactory.createCutAction(tc);
+                                popupActions[3] = ContextActionFactory.createCopyAction(tc);
+                                popupActions[4] = ContextActionFactory.createPasteAction(tc);
+                                popupActions[5] = ContextActionFactory.createDeleteAction(tc);
+                                popupActions[6] = ContextActionFactory.createSelectAllAction(tc);
+                                popupActions[7] = ContextActionFactory.createCutAllAction(tc);
+                                popupActions[8] = ContextActionFactory.createCopyAllAction(tc);
+                                popupActions[9] = ContextActionFactory.createReplaceAllAction(tc);
+                                popupActions[10] = ContextActionFactory.createDeleteAllAction(tc);
+                                TEXT_POPUP_ACTION_MAP.put(tc, popupActions);
+                            }
+
+                            boolean editable = tc.isEditable();
+                            boolean hasText = !SwingUtils.getRawText(tc).isEmpty();
+                            boolean hasSelectedText = tc.getSelectedText() != null;
+                            boolean canImport = tc.getTransferHandler().canImport(tc,
+                                    Toolkit.getDefaultToolkit().getSystemClipboard()
+                                            .getAvailableDataFlavors());
+                            TEXT_POPUP_MENU.removeAll();
+                            if (editable) {
+                                UndoManager um = cah.getUndoManager();
+                                popupActions[0].putValue(Action.NAME,
+                                        um.getUndoPresentationName());
+                                popupActions[0].setEnabled(um.canUndo());
+                                popupActions[1].putValue(Action.NAME,
+                                        um.getRedoPresentationName());
+                                popupActions[1].setEnabled(um.canRedo());
+                                TEXT_POPUP_MENU.add(popupActions[0]);    // Undo
+                                TEXT_POPUP_MENU.add(popupActions[1]);    // Redo
+                                TEXT_POPUP_MENU.addSeparator();
+                                popupActions[2].setEnabled(hasSelectedText);
+                                TEXT_POPUP_MENU.add(popupActions[2]);    // Cut
+                            }
+                            popupActions[3].setEnabled(hasSelectedText);
+                            TEXT_POPUP_MENU.add(popupActions[3]);    // Copy
+                            if (editable) {
+                                popupActions[4].setEnabled(canImport);
+                                TEXT_POPUP_MENU.add(popupActions[4]);    // Paste
+                                popupActions[5].setEnabled(hasSelectedText);
+                                TEXT_POPUP_MENU.add(popupActions[5]);    // Delete
+                            }
+                            TEXT_POPUP_MENU.addSeparator();
+                            if (editable) {
+                                popupActions[6].setEnabled(hasText);
+                                TEXT_POPUP_MENU.add(popupActions[6]);    // Select All
+                                popupActions[7].setEnabled(hasText);
+                                TEXT_POPUP_MENU.add(popupActions[7]);    // Cut All
+                            }
+                            popupActions[7].setEnabled(hasText);
+                            TEXT_POPUP_MENU.add(popupActions[8]);    // Copy All
+                            if (editable) {
+                                popupActions[9].setEnabled(canImport);
+                                TEXT_POPUP_MENU.add(popupActions[9]);    // Replace All
+                                popupActions[10].setEnabled(hasText);
+                                TEXT_POPUP_MENU.add(popupActions[10]);    // Delete All
+                            }
+                            TEXT_POPUP_MENU.show(tc, me.getX(), me.getY());
                         }
                     }
                 }
