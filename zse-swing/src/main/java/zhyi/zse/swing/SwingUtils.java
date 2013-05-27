@@ -119,11 +119,11 @@ public final class SwingUtils {
     }
 
     /**
-     * Displays the stack trace of a throwable in a dialog.
+     * Displays the stack trace of an exception in a dialog.
      *
      * @param parent    The component of which the window ancestor is used as
      *                  the owner of the dialog.
-     * @param throwable The throwable to be displayed.
+     * @param throwable The exception to be displayed.
      * @param severe    {@code true} for an error icon, or {@code false} for
      *                  a warning icon.
      */
