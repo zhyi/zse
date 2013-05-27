@@ -19,10 +19,14 @@ package zhyi.zse.swing;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
+import javax.swing.JEditorPane;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.JTextComponent;
 import zhyi.zse.lang.ExceptionUtils;
 
 /**
@@ -82,21 +86,68 @@ public final class SwingUtils {
     }
 
     /**
+     * Brings up a dialog displaying the specified message wrapped in a scroll
+     * pane.
+     *
+     * @param parent      The component of which the window ancestor is used as
+     *                    the owner of the dialog.
+     * @param message     The message to be displayed; may be formatted with HTML.
+     * @param wrap        Whether to wrap the lines. Takes no effect if
+     *                    the message is an HTML string.
+     * @param title       The title for the dialog.
+     * @param messageType One of the message type defined in {@link JOptionPane}.
+     */
+    public static void showLongMessage(Component parent, String message,
+             boolean wrap, String title, int messageType) {
+        if (BasicHTML.isHTMLString(message)) {
+            JEditorPane editorPane = new JEditorPane("text/html", message);
+            editorPane.setSize(320, 180);
+            editorPane.setEditable(false);
+            JOptionPane.showMessageDialog(parent,
+                    new JScrollPane(editorPane), title, messageType);
+        } else {
+            JTextArea textArea = new JTextArea(message);
+            textArea.setSize(320, 180);
+            textArea.setEditable(false);
+            if (wrap) {
+                textArea.setLineWrap(true);
+                textArea.setWrapStyleWord(true);
+            }
+            JOptionPane.showMessageDialog(parent,
+                    new JScrollPane(textArea), title, messageType);
+        }
+    }
+
+    /**
      * Displays the stack trace of a throwable in a dialog.
      *
+     * @param parent    The component of which the window ancestor is used as
+     *                  the owner of the dialog.
      * @param throwable The throwable to be displayed.
      * @param severe    {@code true} for an error icon, or {@code false} for
      *                  a warning icon.
-     * @param parent    The component of which the window ancestor is used as
-     *                  the owner of the stack trace dialog.
      */
-    public static void showStackTrace(Throwable throwable,
-            boolean severe, Component parent) {
-        JTextArea stackTraceTextArea = new JTextArea(
-                ExceptionUtils.printStackTrace(throwable), 20, 80);
-        stackTraceTextArea.setEditable(false);
-        JOptionPane.showMessageDialog(parent,
-                new JScrollPane(stackTraceTextArea), throwable.getClass().getName(),
+    public static void showStackTrace(Component parent,
+            Throwable throwable, boolean severe) {
+        showLongMessage(parent, ExceptionUtils.printStackTrace(throwable),
+                false, throwable.getClass().getName(),
                 severe ? JOptionPane.ERROR_MESSAGE : JOptionPane.WARNING_MESSAGE);
+    }
+
+    /**
+     * Returns the text, without formatting styles, containing in the specified
+     * text component.
+     *
+     * @param textComponent The text component.
+     *
+     * @return The raw text.
+     */
+    public static String getRawText(JTextComponent textComponent) {
+        try {
+            return textComponent.getDocument().getText(
+                    0, textComponent.getDocument().getLength());
+        } catch (BadLocationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }
