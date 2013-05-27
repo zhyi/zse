@@ -63,7 +63,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
-import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSpinner;
@@ -292,7 +291,10 @@ public class GuiParser {
             }
         }
 
-        setProperties(bean, e.getAttributes());
+        if (!(bean instanceof SingleValueSelector)
+                && !(bean instanceof MultiValueSelector)) {
+            setProperties(bean, e.getAttributes());
+        }
 
         if (autoMnemonic) {
             if (bean instanceof JLabel) {
@@ -302,124 +304,104 @@ public class GuiParser {
             }
         }
 
-        if (bean instanceof JFileChooser || bean instanceof JColorChooser) {
-            final JComponent c = (JComponent) bean;
-            c.addPropertyChangeListener("locale", new PropertyChangeListener() {
-                @Override
-                public void propertyChange(PropertyChangeEvent evt) {
-                    c.updateUI();
-                }
-            });
-        } else if (bean instanceof JComboBox || bean instanceof JList
-                || bean instanceof JSpinner || bean instanceof JTable
-                || bean instanceof JTree) {
-            final JComponent c = (JComponent) bean;
-            c.addPropertyChangeListener("locale", new PropertyChangeListener() {
-                @Override
-                public void propertyChange(PropertyChangeEvent evt) {
-                    c.revalidate();
-                    c.repaint();
-                }
-            });
-        } else if (bean instanceof JMenuBar) {
-            for (Element child : getChildren(e, "component")) {
-                ((JMenuBar) bean).add((Component) createBean(child));
-            }
-        } else if (bean instanceof JMenu) {
-            JMenu m = (JMenu) bean;
-            for (Element child : getChildren(e, "*")) {
-                switch (child.getTagName()) {
-                    case "component":
-                        m.add((Component) objectMap.get(getAttribute(child, "ref")));
-                        break;
-                    case "separator":
-                        m.addSeparator();
-                        break;
-                }
-            }
-        } else if (bean instanceof JPopupMenu) {
-            JPopupMenu pm = (JPopupMenu) bean;
-            for (Element child : getChildren(e, "*")) {
-                switch (child.getTagName()) {
-                    case "component":
-                        pm.add((Component) objectMap.get(getAttribute(child, "ref")));
-                        break;
-                    case "separator":
-                        pm.addSeparator();
-                        break;
-                }
-            }
-        } else if (bean instanceof JToolBar) {
-            JToolBar tb = (JToolBar) bean;
-            for (Element child : getChildren(e, "*")) {
-                switch (child.getTagName()) {
-                    case "component":
-                        tb.add((Component) objectMap.get(getAttribute(child, "ref")));
-                        break;
-                    case "separator":
-                        tb.addSeparator();
-                        break;
-                }
-            }
-        } else if (bean instanceof JTabbedPane) {
-            for (Element child : getChildren(e, "component")) {
-                JTabbedPane tp = (JTabbedPane) bean;
-                Component c = (Component) objectMap.get(getAttribute(child, "ref"));
-                tp.addTab(evaluate(getAttribute(child, "title"), String.class, c.getName()),
-                        evaluate(getAttribute(child, "icon"), Icon.class, null),
-                        c, evaluate(getAttribute(child, "tip"), String.class, null));
-                String tab = getAttribute(child, "tab");
-                if (tab != null) {
-                    tp.setTabComponentAt(tp.getTabCount() - 1,
-                            (Component) objectMap.get(tab));
-                }
-            }
-        } else if (bean instanceof ButtonGroup) {
-            for (Element child : getChildren(e, "button")) {
-                ((ButtonGroup) bean).add((AbstractButton)
-                        objectMap.get(getAttribute(child, "ref")));
-            }
-        } else if (bean instanceof SingleValueSelector) {
-            SingleValueSelector<Object> svs = (SingleValueSelector<Object>) bean;
-            Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
-            for (Element child : getChildren(e, "button")) {
-                AbstractButton button = (AbstractButton)
-                        objectMap.get(getAttribute(child, "ref"));
-                svs.add(button, evaluate(getAttribute(child, "value"),
-                        valueClass, null));
-                if (evaluate(getAttribute(child, "selected"),
-                        Boolean.class, Boolean.FALSE)) {
-                    button.setSelected(true);
-                }
-            }
-        } else if (bean instanceof MultiValueSelector) {
-            MultiValueSelector<Object> mvs = (MultiValueSelector<Object>) bean;
-            Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
-            for (Element child : getChildren(e, "button")) {
-                AbstractButton button = (AbstractButton)
-                        objectMap.get(getAttribute(child, "ref"));
-                mvs.add(button, evaluate(getAttribute(child, "value"),
-                        valueClass, null));
-                if (evaluate(getAttribute(child, "selected"),
-                        Boolean.class, Boolean.FALSE)) {
-                    button.setSelected(true);
-                }
+        if (dynamicLocale) {
+            if (bean instanceof JFileChooser || bean instanceof JColorChooser) {
+                final JComponent c = (JComponent) bean;
+                c.addPropertyChangeListener("locale", new PropertyChangeListener() {
+                    @Override
+                    public void propertyChange(PropertyChangeEvent evt) {
+                        c.updateUI();
+                    }
+                });
+            } else if (bean instanceof JComboBox || bean instanceof JList
+                    || bean instanceof JSpinner || bean instanceof JTable
+                    || bean instanceof JTree) {
+                final JComponent c = (JComponent) bean;
+                c.addPropertyChangeListener("locale", new PropertyChangeListener() {
+                    @Override
+                    public void propertyChange(PropertyChangeEvent evt) {
+                        c.revalidate();
+                        c.repaint();
+                    }
+                });
             }
         }
 
         for (Element child : getChildren(e, "*")) {
             String name = child.getTagName();
-            if (name.equals("layout")) {
-                Container host = bean instanceof RootPaneContainer
-                        ? ((RootPaneContainer) bean).getContentPane() : (Container) bean;
-                if (host.getLayout() instanceof BorderLayout) {
-                    JPanel panel = new JPanel();
-                    host.add(panel, BorderLayout.CENTER);
-                    host = panel;
-                }
-                layout(host, child);
-            } else if (name.endsWith("Listener")) {
-                addListener(bean, child);
+            switch (name) {
+                case "layout":
+                    Container host = bean instanceof RootPaneContainer
+                            ? ((RootPaneContainer) bean).getContentPane()
+                            : (Container) bean;
+                    if (host.getLayout() instanceof BorderLayout) {
+                        JPanel panel = new JPanel();
+                        host.add(panel, BorderLayout.CENTER);
+                        host = panel;
+                    }
+                    layout(host, child);
+                    break;
+                case "component":
+                    if (bean instanceof Container) {
+                        ((Container) bean).add((Component)
+                                objectMap.get(getAttribute(child, "ref")));
+                    }
+                    break;
+                case "separator":
+                    if (bean instanceof JMenu) {
+                        ((JMenu) bean).addSeparator();
+                    } else if (bean instanceof JPopupMenu) {
+                        ((JPopupMenu) bean).addSeparator();
+                    } else if (bean instanceof JToolBar) {
+                        ((JToolBar) bean).addSeparator(
+                                evaluate(getAttribute(child, "size"),
+                                        Dimension.class, null));
+                    }
+                    break;
+                case "button":
+                    if (bean instanceof ButtonGroup) {
+                        ((ButtonGroup) bean).add((AbstractButton)
+                                objectMap.get(getAttribute(child, "ref")));
+                    } else if (bean instanceof SingleValueSelector) {
+                        SingleValueSelector<Object> svs = (SingleValueSelector<Object>) bean;
+                        Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
+                        AbstractButton button = (AbstractButton)
+                                objectMap.get(getAttribute(child, "ref"));
+                        svs.add(button, evaluate(getAttribute(child, "value"),
+                                        valueClass, null));
+                        if (evaluate(getAttribute(child, "selected"),
+                                Boolean.class, Boolean.FALSE)) {
+                            button.setSelected(true);
+                        }
+                    } else if (bean instanceof MultiValueSelector) {
+                        MultiValueSelector<Object> mvs = (MultiValueSelector<Object>) bean;
+                        Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
+                        AbstractButton button = (AbstractButton)
+                                objectMap.get(getAttribute(child, "ref"));
+                        mvs.add(button, evaluate(getAttribute(child, "value"),
+                                        valueClass, null));
+                        if (evaluate(getAttribute(child, "selected"),
+                                Boolean.class, Boolean.FALSE)) {
+                            button.setSelected(true);
+                        }
+                    }
+                    break;
+                case "tab":
+                    JTabbedPane tp = (JTabbedPane) bean;
+                    Component c = (Component) objectMap.get(getAttribute(child, "ref"));
+                    tp.addTab(evaluate(getAttribute(child, "title"), String.class, c.getName()),
+                            evaluate(getAttribute(child, "icon"), Icon.class, null),
+                            c, evaluate(getAttribute(child, "tip"), String.class, null));
+                    String tab = getAttribute(child, "tab");
+                    if (tab != null) {
+                        tp.setTabComponentAt(tp.getTabCount() - 1,
+                                (Component) objectMap.get(tab));
+                    }
+                    break;
+                default:
+                    if (name.endsWith("Listener")) {
+                        addListener(bean, child);
+                    }
             }
         }
 

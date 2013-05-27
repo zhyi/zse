@@ -30,8 +30,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import javax.swing.AbstractButton;
 import javax.swing.event.EventListenerList;
-import zhyi.zse.swing.event.SelectionChangeEvent;
-import zhyi.zse.swing.event.SelectionChangeListener;
+import zhyi.zse.swing.event.SelectionEvent;
+import zhyi.zse.swing.event.SelectionListener;
 
 /**
  * Groups multiple buttons together as a multi-value selector.
@@ -44,7 +44,7 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  */
 public class MultiValueSelector<T> {
     private Map<AbstractButton, T> buttonValueMap;
-    private EventListenerList eventListeners;
+    private EventListenerList selectionListeners;
     private ItemListener itemListener;
 
     /**
@@ -52,14 +52,14 @@ public class MultiValueSelector<T> {
      */
     public MultiValueSelector() {
         buttonValueMap = new LinkedHashMap<>();
-        eventListeners = new EventListenerList();
+        selectionListeners = new EventListenerList();
         itemListener = new ItemListener() {
             @Override
             @SuppressWarnings("unchecked")
             public void itemStateChanged(ItemEvent e) {
-                for (SelectionChangeListener<? super T> l
-                        : eventListeners.getListeners(SelectionChangeListener.class)) {
-                    l.selectionChanged(new SelectionChangeEvent<>(MultiValueSelector.this));
+                for (SelectionListener<? super T> l
+                        : selectionListeners.getListeners(SelectionListener.class)) {
+                    l.selectionChanged(new SelectionEvent<>(MultiValueSelector.this));
                 }
             }
         };
@@ -170,8 +170,8 @@ public class MultiValueSelector<T> {
      *
      * @param l The selection change listener to be added.
      */
-    public void addSelectionChangeListener(SelectionChangeListener<? super T> l) {
-        eventListeners.add(SelectionChangeListener.class, l);
+    public void addSelectionChangeListener(SelectionListener<? super T> l) {
+        selectionListeners.add(SelectionListener.class, l);
     }
 
     /**
@@ -179,7 +179,7 @@ public class MultiValueSelector<T> {
      *
      * @param l The selection listener to be removed.
      */
-    public void removeSelectionChangeListener(SelectionChangeListener<? super T> l) {
-        eventListeners.remove(SelectionChangeListener.class, l);
+    public void removeSelectionChangeListener(SelectionListener<? super T> l) {
+        selectionListeners.remove(SelectionListener.class, l);
     }
 }

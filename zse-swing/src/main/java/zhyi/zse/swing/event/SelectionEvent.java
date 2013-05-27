@@ -21,8 +21,8 @@ import zhyi.zse.swing.MultiValueSelector;
 import zhyi.zse.swing.SingleValueSelector;
 
 /**
- * A selection change event is emitted when the selected value(s) of a value
- * selector has been changed.
+ * A selection event is emitted when the selected value(s) of a value selector
+ * has been changed.
  * <p>
  * The {@link #getSource} method returns the value selector, an instance of either
  * {@link SingleValueSelector} or {@link MultiValueSelector}, on which this event
@@ -36,13 +36,13 @@ import zhyi.zse.swing.SingleValueSelector;
  * @see MultiValueSelector
  */
 @SuppressWarnings("serial")
-public class SelectionChangeEvent<T> extends EventObject {
+public class SelectionEvent<T> extends EventObject {
     /**
      * Constructs a new instance with a single value selector as the source object.
      *
      * @param source The source single value selector.
      */
-    public SelectionChangeEvent(SingleValueSelector<T> source) {
+    public SelectionEvent(SingleValueSelector<T> source) {
         super(source);
     }
 
@@ -51,7 +51,7 @@ public class SelectionChangeEvent<T> extends EventObject {
      *
      * @param source The source multi-value selector.
      */
-    public SelectionChangeEvent(MultiValueSelector<T> source) {
+    public SelectionEvent(MultiValueSelector<T> source) {
         super(source);
     }
 }
