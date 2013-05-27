@@ -57,15 +57,20 @@ import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.JToolBar;
+import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.RootPaneContainer;
@@ -193,6 +198,7 @@ public class GuiParser {
     private Map<String, Object> objectMap;
     private String resourceBundleName;
     private boolean autoMnemonic;
+    private boolean dynamicLocale;
 
     private GuiParser(Document guiXml, Object controller,
             Map<String, Object> existingObjectMap) {
@@ -216,6 +222,7 @@ public class GuiParser {
         if (existingObjectMap != null) {
             objectMap.putAll(existingObjectMap);
         }
+        dynamicLocale = true;
         CONVERTER_MANAGER.register(Icon.class, new AsObjectOnly<Icon>() {
             @Override
             protected Icon asObjectInternal(String literalValue) {
@@ -252,6 +259,9 @@ public class GuiParser {
                             break;
                         case "autoMnemonic":
                             autoMnemonic = Boolean.parseBoolean(data);
+                            break;
+                        case "dynamicLocale":
+                            dynamicLocale = Boolean.parseBoolean(data);
                     }
                     break;
                 case Node.ELEMENT_NODE:    // The unique root node.
@@ -298,6 +308,17 @@ public class GuiParser {
                 @Override
                 public void propertyChange(PropertyChangeEvent evt) {
                     c.updateUI();
+                }
+            });
+        } else if (bean instanceof JComboBox || bean instanceof JList
+                || bean instanceof JSpinner || bean instanceof JTable
+                || bean instanceof JTree) {
+            final JComponent c = (JComponent) bean;
+            c.addPropertyChangeListener("locale", new PropertyChangeListener() {
+                @Override
+                public void propertyChange(PropertyChangeEvent evt) {
+                    c.revalidate();
+                    c.repaint();
                 }
             });
         } else if (bean instanceof JMenuBar) {
@@ -439,7 +460,8 @@ public class GuiParser {
                         }
                     } else {
                         ReflectionUtils.invoke(setter, bean, prop);
-                        if (value.startsWith("#{res.") && value.endsWith("}")) {
+                        if (dynamicLocale && value.startsWith("#{res.")
+                                && value.endsWith("}")) {
                             ((Component) bean).addPropertyChangeListener("locale",
                                     new PropertyChangeListener() {
                                 @Override
