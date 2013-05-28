@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package zhyi.zse.swing;
+package zhyi.zse.swing.parser;
 
 import java.awt.AWTException;
 import java.awt.BorderLayout;
@@ -99,6 +99,8 @@ import zhyi.zse.lang.AbstractInvocationHandler;
 import zhyi.zse.lang.ReflectionUtils;
 import zhyi.zse.lang.StringUtils;
 import zhyi.zse.lang.StringUtils.DelimitationStyle;
+import zhyi.zse.swing.MultiValueSelector;
+import zhyi.zse.swing.SingleValueSelector;
 
 /**
  * Provides utility methods to parse GUI XML.
