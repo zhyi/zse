@@ -19,7 +19,11 @@ package zhyi.zse.swing;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Window;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.swing.AbstractButton;
 import javax.swing.JEditorPane;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
@@ -35,6 +39,8 @@ import zhyi.zse.lang.ExceptionUtils;
  * @author Zhao Yi
  */
 public final class SwingUtils {
+    private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
+
     private SwingUtils() {
     }
 
@@ -148,6 +154,86 @@ public final class SwingUtils {
                     0, textComponent.getDocument().getLength());
         } catch (BadLocationException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Sets the text for a label, with the mnemonic character analyzed.
+     * <p>
+     * The mnemonic character is defined as the first character that is surrounded
+     * with dashes ({@code _}) in the text. If no mnemonic character is found,
+     * the text is set to the label directly.
+     *
+     * @param label The label.
+     * @param text  The text with an optional mnemonic character.
+     */
+    public static void setTextWithMnemonic(JLabel label, String text) {
+        Mnemonic mnemonic = analyzeMnemonic(text);
+        if (mnemonic != null) {
+            label.setText(mnemonic.text);
+            label.setDisplayedMnemonic(mnemonic.mnemonicChar);
+            label.setDisplayedMnemonicIndex(mnemonic.mnemonicIndex);
+        } else {
+            label.setText(text);
+        }
+    }
+
+    /**
+     * Sets the text for a button, with the mnemonic character analyzed.
+     * <p>
+     * The mnemonic character is defined as the first character that is surrounded
+     * with dashes ({@code _}) in the text. If no mnemonic character is found,
+     * the text is set to the button directly.
+     *
+     * @param button The button.
+     * @param text   The text with an optional mnemonic character.
+     */
+    public static void setTextWithMnemonic(AbstractButton button, String text) {
+        Mnemonic mnemonic = analyzeMnemonic(text);
+        if (mnemonic != null) {
+            button.setText(mnemonic.text);
+            button.setMnemonic(mnemonic.mnemonicChar);
+            button.setDisplayedMnemonicIndex(mnemonic.mnemonicIndex);
+        } else {
+            button.setText(text);
+        }
+    }
+
+    private static Mnemonic analyzeMnemonic(String text) {
+        if (text == null) {
+            return null;
+        }
+
+        Matcher matcher = MNEMONIC_PATTERN.matcher(text);
+        if (matcher.find()) {
+            String mnemonicMark = matcher.group();
+            char mnemonicChar = mnemonicMark.charAt(1);
+            int start = matcher.start();
+            int end = matcher.end();
+            StringBuilder sb = new StringBuilder()
+                    .append(text.substring(0, start));
+            if (BasicHTML.isHTMLString(text)) {
+                // HTML can be complex so it doesn't always work as expected.
+                sb.append("<u>").append(mnemonicChar).append("</u>");
+            } else {
+                sb.append(mnemonicChar);
+            }
+            sb.append(text.substring(end));
+            return new Mnemonic(sb.toString(), mnemonicChar, start);
+        } else {
+            return null;
+        }
+    }
+
+    private static class Mnemonic {
+        private String text;
+        private char mnemonicChar;
+        private int mnemonicIndex;
+
+        private Mnemonic(String text, char mnemonicChar, int mnemonicIndex) {
+            this.text = text;
+            this.mnemonicChar = mnemonicChar;
+            this.mnemonicIndex = mnemonicIndex;
         }
     }
 }
