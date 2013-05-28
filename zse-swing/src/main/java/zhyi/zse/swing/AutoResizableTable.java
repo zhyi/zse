@@ -39,6 +39,13 @@ public class AutoResizableTable extends JTable {
     private TableModelListener resizeListener;
 
     /**
+     * Constructs a new instance with an empty data model.
+     */
+    public AutoResizableTable() {
+        this(null);
+    }
+
+    /**
      * Constructs a new instance with the specified data model.
      * <p>
      * The auto resize mode is set to {@link #AUTO_RESIZE_OFF} to implement
