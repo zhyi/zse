@@ -37,7 +37,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -65,6 +67,7 @@ import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JSlider;
 import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
@@ -315,7 +318,7 @@ public class GuiParser {
                 });
             } else if (bean instanceof JComboBox || bean instanceof JList
                     || bean instanceof JSpinner || bean instanceof JTable
-                    || bean instanceof JTree) {
+                    || bean instanceof JTree || bean instanceof JSlider) {
                 final JComponent c = (JComponent) bean;
                 c.addPropertyChangeListener("locale", new PropertyChangeListener() {
                     @Override
@@ -398,6 +401,31 @@ public class GuiParser {
                                 (Component) objectMap.get(tab));
                     }
                     break;
+                case "label":
+                    JSlider slider = (JSlider) bean;
+                    Dictionary<Integer, Component> labelTable = slider.getLabelTable();
+                    if (labelTable == null) {
+                        labelTable = new Hashtable<>();
+                        slider.setLabelTable(labelTable);
+                    }
+                    Integer value = evaluate(getAttribute(child, "value"), Integer.class);
+                    final String labelExp = getAttribute(child, "label");
+                    Component label = (Component) objectMap.get(labelExp);
+                    if (label == null) {
+                        label = new JLabel(evaluate(labelExp, String.class));
+                        if (dynamicLocale && isLocalizable(labelExp)) {
+                            label.addPropertyChangeListener("locale",
+                                    new PropertyChangeListener() {
+                                @Override
+                                public void propertyChange(PropertyChangeEvent evt) {
+                                    ((JLabel) evt.getSource()).setText(
+                                            evaluate(labelExp, String.class));
+                                }
+                            });
+                        }
+                    }
+                    labelTable.put(value, label);
+                    break;
                 default:
                     if (name.endsWith("Listener")) {
                         addListener(bean, child);
@@ -442,8 +470,7 @@ public class GuiParser {
                         }
                     } else {
                         ReflectionUtils.invoke(setter, bean, prop);
-                        if (dynamicLocale && value.startsWith("#{res.")
-                                && value.endsWith("}")) {
+                        if (dynamicLocale && isLocalizable(value)) {
                             ((Component) bean).addPropertyChangeListener("locale",
                                     new PropertyChangeListener() {
                                 @Override
@@ -824,6 +851,11 @@ public class GuiParser {
     private <V> V evaluate(String literalValue,
             Class<V> valueClass, V nullDefault) {
         return literalValue == null ? nullDefault : evaluate(literalValue, valueClass);
+    }
+
+    private static boolean isLocalizable(String exp) {
+        return (exp.startsWith("#{res.") || exp.startsWith("#{uid."))
+                && exp.endsWith("}");
     }
 
     /**
