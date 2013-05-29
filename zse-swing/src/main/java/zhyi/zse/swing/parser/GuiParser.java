@@ -347,7 +347,7 @@ public class GuiParser {
         try {
             String guiFile = controllerClass.getSimpleName() + ".xml";
             for (Node node : iterable(documentBuilder.parse(
-                    controllerClass.getResourceAsStream(guiFile)).getChildNodes())) {
+                    controllerClass.getResource(guiFile).toString()).getChildNodes())) {
                 switch (node.getNodeType()) {
                     case Node.PROCESSING_INSTRUCTION_NODE:
                         ProcessingInstruction pi = (ProcessingInstruction) node;
