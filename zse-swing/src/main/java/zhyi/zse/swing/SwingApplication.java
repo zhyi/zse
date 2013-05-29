@@ -138,7 +138,8 @@ public abstract class SwingApplication {
             UIManager.getLookAndFeelDefaults().setDefaultLocale(l);
             JComponent.setDefaultLocale(l);
             for (Window w : Window.getWindows()) {
-                setComponentTreeLocale(w, l);
+                setComponentTreeLocale(
+                        w, l, ComponentOrientation.getOrientation(l));
             }
             localeMonitored = true;
         }
@@ -445,14 +446,15 @@ public abstract class SwingApplication {
         }, AWTEvent.MOUSE_EVENT_MASK);
     }
 
-    private static void setComponentTreeLocale(Component c, Locale l) {
+    private static void setComponentTreeLocale(Component c,
+            Locale l, ComponentOrientation o) {
         c.setLocale(l);
-        c.setComponentOrientation(ComponentOrientation.getOrientation(l));
+        c.setComponentOrientation(o);
 
         if (c instanceof JComponent) {
             JPopupMenu popupMenu = ((JComponent) c).getComponentPopupMenu();
             if (popupMenu != null) {
-                setComponentTreeLocale(popupMenu, l);
+                setComponentTreeLocale(popupMenu, l, o);
             }
         }
 
@@ -465,7 +467,7 @@ public abstract class SwingApplication {
         }
         if (children != null) {
             for (Component child : children) {
-                setComponentTreeLocale(child, l);
+                setComponentTreeLocale(child, l, o);
             }
         }
     }
