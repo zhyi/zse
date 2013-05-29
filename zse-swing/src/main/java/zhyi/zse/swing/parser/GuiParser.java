@@ -30,7 +30,6 @@ import java.awt.font.TextAttribute;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -46,8 +45,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -78,13 +75,11 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.RootPaneContainer;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
-import javax.swing.plaf.basic.BasicHTML;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.html.StyleSheet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -101,54 +96,84 @@ import zhyi.zse.lang.StringUtils;
 import zhyi.zse.lang.StringUtils.DelimitationStyle;
 import zhyi.zse.swing.MultiValueSelector;
 import zhyi.zse.swing.SingleValueSelector;
+import zhyi.zse.swing.SwingUtils;
 
 /**
- * Provides utility methods to parse GUI XML.
+ * This class eases the way to set up GUI components and layouts with XML files,
+ * and provides additional benefits like automatic mnemonic analysis and dynamic
+ * locales.
+ * <p>
+ * For convenience, two static {@code parseGui} methods are provided for mostly
+ * common usages with default parsing configurations.
  *
  * @author Zhao Yi
  */
 public class GuiParser {
-    private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
-    private static final DocumentBuilder DOCUMENT_BUILDER = createDocumentBuilder();
-    private static final StyleSheet STYLE_SHEET = new StyleSheet();
-    private static final Constructor<?> CSS_BORDER_CONSTRUCTOR
+    private static final GuiParser SHARED_PARSER = new GuiParser();
+    private static final DocumentBuilder documentBuilder = createDocumentBuilder();
+    private static final StyleSheet styleSheet = new StyleSheet();
+    private static final Constructor<?> cssBorderConstructor
             = ReflectionUtils.getDeclaredConstructor(
                     ReflectionUtils.getClass("javax.swing.text.html.CSSBorder"),
                     AttributeSet.class);
-    private static final ConverterManager CONVERTER_MANAGER = new ConverterManager();
-    static {
-        CONVERTER_MANAGER.register(Border.class, new AsObjectOnly<Border>() {
+    private static final Map<Class<?>, BeanMate> beanMateMap = new HashMap<>();
+    private static final Map<Class<?>, ListenerMate> listenerMateMap = new HashMap<>();
+
+    private Object controller;
+    private Class<?> controllerClass;
+    private ClassLoader controllerLoader;
+    private Map<String, Object> objectMap;
+    private Map<String, Class<?>> importMap;
+    private List<String> starImports;
+    private boolean autoMnemonic;
+    private boolean dynamicLocale;
+    private String bundle;
+    private ConverterManager converterManager;
+    private List<BeanProcessor> beanProcessors;
+
+    /**
+     * Constructs a new instance.
+     */
+    public GuiParser() {
+        objectMap = new HashMap<>();
+        importMap = new HashMap<>();
+        starImports = new ArrayList<>();
+        beanProcessors = new ArrayList<>();
+        converterManager = new ConverterManager();
+        converterManager.register(Border.class, new AsObjectOnly<Border>() {
             @Override
             protected Border asObjectInternal(String literalValue) {
                 try {
-                    return (Border) CSS_BORDER_CONSTRUCTOR.newInstance(
-                            STYLE_SHEET.getDeclaration("border:" + literalValue));
+                    return (Border) cssBorderConstructor.newInstance(
+                            styleSheet.getDeclaration("border:" + literalValue));
                 } catch (ReflectiveOperationException ex) {
                     throw new RuntimeException(ex);
                 }
             }
         });
-        CONVERTER_MANAGER.register(Color.class, new AsObjectOnly<Color>() {
+        converterManager.register(Color.class, new AsObjectOnly<Color>() {
             @Override
             protected Color asObjectInternal(String literalValue) {
-                return STYLE_SHEET.stringToColor(literalValue);
+                return styleSheet.stringToColor(literalValue);
             }
         });
-        CONVERTER_MANAGER.register(Cursor.class, new AsObjectOnly<Cursor>() {
+        converterManager.register(Cursor.class, new AsObjectOnly<Cursor>() {
             @Override
             protected Cursor asObjectInternal(String literalValue) {
                 try {
                     return Cursor.getPredefinedCursor(Integer.parseInt(literalValue));
-                } catch (IllegalArgumentException ex1) {
+                } catch (IllegalArgumentException iae) {
                     try {
                         return Cursor.getSystemCustomCursor(literalValue);
-                    } catch (AWTException ex2) {
-                        throw new IllegalArgumentException(ex2);
+                    } catch (AWTException awte) {
+                        IllegalArgumentException ex = new IllegalArgumentException(awte);
+                        ex.addSuppressed(iae);
+                        throw ex;
                     }
                 }
             }
         });
-        CONVERTER_MANAGER.register(Dimension.class, new AsObjectOnly<Dimension>() {
+        converterManager.register(Dimension.class, new AsObjectOnly<Dimension>() {
             @Override
             protected Dimension asObjectInternal(String literalValue) {
                 List<String> dimensions = StringUtils.split(literalValue, ",", true, 1);
@@ -156,78 +181,14 @@ public class GuiParser {
                         Integer.parseInt(dimensions.get(1)));
             }
         });
-        CONVERTER_MANAGER.register(Font.class, new AsObjectOnly<Font>() {
+        converterManager.register(Font.class, new AsObjectOnly<Font>() {
             @Override
             protected Font asObjectInternal(String literalValue) {
-                return STYLE_SHEET.getFont(
-                        STYLE_SHEET.getDeclaration("font:" + literalValue));
+                return styleSheet.getFont(
+                        styleSheet.getDeclaration("font:" + literalValue));
             }
         });
-        CONVERTER_MANAGER.register(Insets.class, new AsObjectOnly<Insets>() {
-            @Override
-            protected Insets asObjectInternal(String literalValue) {
-                List<String> parameters = StringUtils.split(literalValue, ",", true, 3);
-                return new Insets(Integer.parseInt(parameters.get(0)),
-                        Integer.parseInt(parameters.get(1)),
-                        Integer.parseInt(parameters.get(2)),
-                        Integer.parseInt(parameters.get(3)));
-            }
-        });
-        CONVERTER_MANAGER.register(Rectangle.class, new AsObjectOnly<Rectangle>() {
-            @Override
-            protected Rectangle asObjectInternal(String literalValue) {
-                List<String> parameters = StringUtils.split(literalValue, ",", true, 3);
-                return new Rectangle(Integer.parseInt(parameters.get(0)),
-                        Integer.parseInt(parameters.get(1)),
-                        Integer.parseInt(parameters.get(2)),
-                        Integer.parseInt(parameters.get(3)));
-            }
-        });
-        CONVERTER_MANAGER.register(KeyStroke.class, new AsObjectOnly<KeyStroke>() {
-            @Override
-            protected KeyStroke asObjectInternal(String literalValue) {
-                return KeyStroke.getKeyStroke(literalValue);
-            }
-        });
-    }
-
-    private Document guiXml;
-    private ClassLoader controllerLoader;
-    private Class<?> controllerClass;
-    private Object controller;
-    private Map<String, Class<?>> importMap;
-    private List<String> starImports;
-    private Map<Class<?>, BeanMate> beanMateMap;
-    private Map<Class<?>, ListenerMate> listenerMateMap;
-    private Map<String, Object> objectMap;
-    private String resourceBundleName;
-    private boolean autoMnemonic;
-    private boolean dynamicLocale;
-
-    private GuiParser(Document guiXml, Object controller,
-            Map<String, Object> existingObjectMap) {
-        this.guiXml = guiXml;
-        this.controller = controller;
-        controllerClass = controller.getClass();
-        controllerLoader = controllerClass.getClassLoader();
-        importMap = new HashMap<>();
-        starImports = new ArrayList<>();
-        starImports.add("java.lang.");
-        starImports.add("java.util.");
-        starImports.add("java.awt.");
-        starImports.add("java.awt.event.");
-        starImports.add("javax.swing.");
-        starImports.add("javax.swing.event.");
-        starImports.add("zhyi.zse.swing.");
-        starImports.add("zhyi.zse.swing.event.");
-        beanMateMap = new HashMap<>();
-        listenerMateMap = new HashMap<>();
-        objectMap = new HashMap<>();
-        if (existingObjectMap != null) {
-            objectMap.putAll(existingObjectMap);
-        }
-        dynamicLocale = true;
-        CONVERTER_MANAGER.register(Icon.class, new AsObjectOnly<Icon>() {
+        converterManager.register(Icon.class, new AsObjectOnly<Icon>() {
             @Override
             protected Icon asObjectInternal(String literalValue) {
                 URL url = controllerClass.getResource(literalValue);
@@ -240,39 +201,186 @@ public class GuiParser {
                 return url == null ? new ImageIcon(literalValue) : new ImageIcon(url);
             }
         });
+        converterManager.register(Insets.class, new AsObjectOnly<Insets>() {
+            @Override
+            protected Insets asObjectInternal(String literalValue) {
+                List<String> parameters = StringUtils.split(literalValue, ",", true, 3);
+                return new Insets(Integer.parseInt(parameters.get(0)),
+                        Integer.parseInt(parameters.get(1)),
+                        Integer.parseInt(parameters.get(2)),
+                        Integer.parseInt(parameters.get(3)));
+            }
+        });
+        converterManager.register(Rectangle.class, new AsObjectOnly<Rectangle>() {
+            @Override
+            protected Rectangle asObjectInternal(String literalValue) {
+                List<String> parameters = StringUtils.split(literalValue, ",", true, 3);
+                return new Rectangle(Integer.parseInt(parameters.get(0)),
+                        Integer.parseInt(parameters.get(1)),
+                        Integer.parseInt(parameters.get(2)),
+                        Integer.parseInt(parameters.get(3)));
+            }
+        });
+        converterManager.register(KeyStroke.class, new AsObjectOnly<KeyStroke>() {
+            @Override
+            protected KeyStroke asObjectInternal(String literalValue) {
+                return KeyStroke.getKeyStroke(literalValue);
+            }
+        });
     }
 
-    private void parse() {
-        for (Node node : iterable(guiXml.getChildNodes())) {
-            switch (node.getNodeType()) {
-                case Node.PROCESSING_INSTRUCTION_NODE:
-                    ProcessingInstruction pi = (ProcessingInstruction) node;
-                    String data = pi.getData();
-                    switch (pi.getTarget()) {
-                        case "import":
-                            if (data.endsWith("*")) {
-                                starImports.add(data.substring(0, data.length() - 1));
-                            } else {
-                                Class<?> c = ReflectionUtils.getClass(
-                                        data, true, controllerLoader);
-                                importMap.put(c.getSimpleName(), c);
-                            }
-                            break;
-                        case "resource":
-                            resourceBundleName = data;
-                            break;
-                        case "autoMnemonic":
-                            autoMnemonic = Boolean.parseBoolean(data);
-                            break;
-                        case "dynamicLocale":
-                            dynamicLocale = Boolean.parseBoolean(data);
-                    }
-                    break;
-                case Node.ELEMENT_NODE:    // The unique root node.
-                    for (Element child : getChildren((Element) node, "*")) {
-                        createBean(child);
-                    }
+    /**
+     * Registers a custom converter for string-to-object conversion during
+     * parsing the GUI XML file.
+     * <p>
+     * The converter does not need to implement {@link Converter#asString}.
+     * If a converter has already been registered for the type, it will be
+     * replaced.
+     * <p>
+     * By default, {@link GuiParser} supports the following types in addition
+     * to the standard converters provided by {@link ConverterManager} itself:
+     * <dl>
+     * <dt><b>{@link Border}</b>
+     * <dd>The literal value is a CSS border declaration, e.g. "{@code 1px solid
+     * black}".
+     * <dt><b>{@link Color}</b>
+     * <dd>The literal value is a CSS color declaration, e.g. "{@code red}".
+     * <dt><b>{@link Cursor}</b>
+     * <dd>The literal value is an integer for a {@link Cursor#getPredefinedCursor
+     * predefined cursor}, or a string for a {@link Cursor#getSystemCustomCursor
+     * system-specific custom cursor}, e.g. "{@code #{Cursor.HAND_CURSOR}}".
+     * <dt><b>{@link Dimension}</b>
+     * <dd>The literal value is a CSV string, e.g. "{@code 5, 5, 5, 5}".
+     * <dt><b>{@link Font}</b>
+     * <dd>The literal value is a CSS font declaration, e.g. "{@code italic bold}".
+     * <dt><b>{@link Icon}</b>
+     * <dd>The literal value is the path to the class path resource or file,
+     * e.g. "{@code com/abc/Icon.png}".
+     * <dt><b>{@link Rectangle}</b>
+     * <dd>The literal value is a CSV string, e.g. "{@code 5, 5, 5, 5}".
+     * <dt><b>{@link KeyStroke}</b>
+     * <dd>The literal value is a string used by {@link KeyStroke#getKeyStroke(String)},
+     * e.g. "{@code ctrl C}".
+     * </dl>
+     *
+     * @param <T> The type supported by the converter.
+     *
+     * @param type      The class of the supported type.
+     * @param converter The converter to be registered.
+     */
+    public <T> void registerConverter(Class<T> type, Converter<T> converter) {
+        converterManager.register(type, converter);
+    }
+
+    /**
+     * Registers a custom bean processor to this parser.
+     * <p>
+     * All registered bean processors will be called after a bean has been
+     * parsed by the standard parser.
+     *
+     * @param beanProcessor The bean processor to be registered.
+     */
+    public void registerBeanProcessor(BeanProcessor beanProcessor) {
+        beanProcessors.add(beanProcessor);
+    }
+
+    /**
+     * Parses the specified controller's associating GUI XML file to initialize
+     * the GUI components defined in the controller.
+     * <p>
+     * This method is a convenient variant of {@link #parse(Object, Map)
+     * parse(Object, Map)}
+     *
+     * @param controller The controller instance.
+     */
+    public void parse(Object controller) {
+        parse(controller, null);
+    }
+
+    /**
+     * Parses the specified controller's associating GUI XML file to initialize
+     * the GUI components defined in the controller.
+     * <p>
+     * The controller's associated GUI XML file must be located in the same
+     * package as the controller's class, and named as "{@code
+     * <controller_class_simple_name>.xml}". For example, if the controller's
+     * class is "{@code com.abc.Controller}", its associating GUI XML file must
+     * be located in package "{@code com.abc}", and named as "{@code Controller.xml}".
+     * <p>
+     * The controller's class can optionally declares fields with their types
+     * and names matching the elements declared in the GUI XML file. The GUI XML
+     * file can have an element to represent the controller itself, and that
+     * element's tag must be named as the simple name of the controller's class.
+     * This is typically useful when the controller is a GUI component.
+     * <p>
+     * The {@code existingObjectMap} may contain already created objects. While
+     * parsing an element, if the element's ID is already associated with a object
+     * in this map, that object is directly used instead of reflectively creating
+     * a new one with the default constructor.
+     *
+     * @param controller        The controller.
+     * @param existingObjectMap A map containing existing ID-object pairs;
+     *                          may be {@code null}.
+     */
+    public void parse(Object controller,
+            Map<String, Object> existingObjectMap) {
+        this.controller = controller;
+        controllerClass = controller.getClass();
+        controllerLoader = controllerClass.getClassLoader();
+        objectMap.clear();
+        if (existingObjectMap != null) {
+            objectMap.putAll(existingObjectMap);
+        }
+        importMap.clear();
+        starImports.clear();
+        starImports.add("java.lang.");
+        starImports.add("java.util.");
+        starImports.add("java.awt.");
+        starImports.add("java.awt.event.");
+        starImports.add("javax.swing.");
+        starImports.add("javax.swing.event.");
+        starImports.add("zhyi.zse.swing.");
+        starImports.add("zhyi.zse.swing.event.");
+        autoMnemonic = true;
+        dynamicLocale = true;
+
+        try {
+            String guiFile = controllerClass.getSimpleName() + ".xml";
+            for (Node node : iterable(documentBuilder.parse(
+                    controllerClass.getResourceAsStream(guiFile)).getChildNodes())) {
+                switch (node.getNodeType()) {
+                    case Node.PROCESSING_INSTRUCTION_NODE:
+                        ProcessingInstruction pi = (ProcessingInstruction) node;
+                        String data = pi.getData();
+                        switch (pi.getTarget()) {
+                            case "import":
+                                if (data.endsWith("*")) {
+                                    starImports.add(data.substring(
+                                            0, data.length() - 1));
+                                } else {
+                                    Class<?> c = ReflectionUtils.getClass(
+                                            data, true, controllerLoader);
+                                    importMap.put(c.getSimpleName(), c);
+                                }
+                                break;
+                            case "resource":
+                                bundle = data;
+                                break;
+                            case "autoMnemonic":
+                                autoMnemonic = Boolean.parseBoolean(data);
+                                break;
+                            case "dynamicLocale":
+                                dynamicLocale = Boolean.parseBoolean(data);
+                        }
+                        break;
+                    case Node.ELEMENT_NODE:    // The unique root node.
+                        for (Element child : getChildren((Element) node, "*")) {
+                            createBean(child);
+                        }
+                }
             }
+        } catch (SAXException | IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -296,16 +404,14 @@ public class GuiParser {
             }
         }
 
-        if (!(bean instanceof SingleValueSelector)
-                && !(bean instanceof MultiValueSelector)) {
-            setProperties(bean, e.getAttributes());
-        }
-
+        setProperties(bean, e.getAttributes());
         if (autoMnemonic) {
             if (bean instanceof JLabel) {
-                setMnemonic((JLabel) bean);
+                JLabel label = (JLabel) bean;
+                SwingUtils.setTextWithMnemonic(label, label.getText());
             } else if (bean instanceof AbstractButton) {
-                setMnemonic((AbstractButton) bean);
+                AbstractButton button = (AbstractButton) bean;
+                SwingUtils.setTextWithMnemonic(button, button.getText());
             }
         }
 
@@ -344,7 +450,7 @@ public class GuiParser {
                         host.add(panel, BorderLayout.CENTER);
                         host = panel;
                     }
-                    layout(host, child);
+                    setLayout(host, child);
                     break;
                 case "component":
                     if (bean instanceof Container) {
@@ -435,6 +541,10 @@ public class GuiParser {
             }
         }
 
+        for (BeanProcessor beanProcessor : beanProcessors) {
+            beanProcessor.process(bean, e);
+        }
+
         return bean;
     }
 
@@ -458,6 +568,9 @@ public class GuiParser {
                     break;
                 default:
                     final Method setter = bm.setterMap.get(name);
+                    if (setter == null) {
+                        continue;
+                    }
                     final Class<?> propClass = setter.getParameterTypes()[0];
                     Object prop = evaluate(value, propClass);
                     if (prop instanceof Font) {
@@ -494,7 +607,7 @@ public class GuiParser {
             final Border originalBorder = c.getBorder();
             c.setBorder(BorderFactory.createTitledBorder(originalBorder,
                     evaluate(borderTitle, String.class)));
-            if (borderTitle.startsWith("#{res.") && borderTitle.endsWith("}")) {
+            if (isLocalizable(borderTitle)) {
                 final String borderTitleKey = borderTitle;
                 c.addPropertyChangeListener("locale", new PropertyChangeListener() {
                     @Override
@@ -507,7 +620,7 @@ public class GuiParser {
         }
     }
 
-    private void layout(Container host, Element e) {
+    private void setLayout(Container host, Element e) {
         GroupLayout gl = new GroupLayout(host);
         setProperties(gl, e.getAttributes());
         host.setLayout(gl);
@@ -699,22 +812,75 @@ public class GuiParser {
         return beanClass;
     }
 
-    private BeanMate getBeanMate(Class<?> c) {
-        BeanMate bm = beanMateMap.get(c);
-        if (bm == null) {
-            bm = new BeanMate(c);
-            beanMateMap.put(c, bm);
+    @SuppressWarnings("unchecked")
+    private <V> V evaluate(String literalValue, Class<V> valueClass) {
+        valueClass = ReflectionUtils.wrap(valueClass);
+        Converter<V> converter = converterManager.getConverter(valueClass);
+        Object value = literalValue;
+        if (literalValue.startsWith("#{") && literalValue.endsWith("}")) {
+            String expression = literalValue.substring(2, literalValue.length() - 1);
+            List<String> operators = StringUtils.split(expression, ".",
+                    DelimitationStyle.IGNORE_DELIMITER, false, 1);
+            String type = operators.get(0);
+            String target = operators.get(1);
+            switch (type) {
+                case "env":
+                    value = System.getenv(target);
+                    break;
+                case "new":
+                    value = ReflectionUtils.newInstance(getClass(target));
+                    break;
+                case "ref":
+                    value = objectMap.get(target);
+                    break;
+                case "res":
+                    value = ResourceBundle.getBundle(bundle,
+                            Locale.getDefault(), controllerLoader,
+                            FallbackLocaleControl.EN_US_CONTROL).getObject(target);
+                    break;
+                case "sys":
+                    value = System.getProperty(target);
+                    break;
+                case "uid":
+                    value = UIManager.get(target, Locale.getDefault());
+                    break;
+                default:
+                    value = ReflectionUtils.getValue(
+                            ReflectionUtils.getField(getClass(type), target), null);
+            }
         }
-        return bm;
+        if (valueClass.isInstance(value)) {
+            return valueClass.cast(value);
+        } else {
+            return converter.asObject(value.toString());
+        }
     }
 
-    private ListenerMate getListenerMate(Class<?> c) {
-        ListenerMate lm = listenerMateMap.get(c);
-        if (lm == null) {
-            lm = new ListenerMate(c);
-            listenerMateMap.put(c, lm);
-        }
-        return lm;
+    @SuppressWarnings("UseSpecificCatch")
+    private <V> V evaluate(String literalValue,
+            Class<V> valueClass, V nullDefault) {
+        return literalValue == null ? nullDefault : evaluate(literalValue, valueClass);
+    }
+
+    /**
+     * A short cut to parse GUI with default configurations.
+     *
+     * @param controller The controller.
+     */
+    public static void parseGui(Object controller) {
+        SHARED_PARSER.parse(controller);
+    }
+
+    /**
+     * A short cut to parse GUI with default configurations.
+     *
+     * @param controller        The controller.
+     * @param existingObjectMap A map containing existing ID-object pairs;
+     *                          may be {@code null}.
+     */
+    public static void parseGui(Object controller,
+            Map<String, Object> existingObjectMap) {
+        SHARED_PARSER.parse(controller, existingObjectMap);
     }
 
     private static DocumentBuilder createDocumentBuilder() {
@@ -723,6 +889,24 @@ public class GuiParser {
         } catch (ParserConfigurationException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private static BeanMate getBeanMate(Class<?> c) {
+        BeanMate bm = beanMateMap.get(c);
+        if (bm == null) {
+            bm = new BeanMate(c);
+            beanMateMap.put(c, bm);
+        }
+        return bm;
+    }
+
+    private static ListenerMate getListenerMate(Class<?> c) {
+        ListenerMate lm = listenerMateMap.get(c);
+        if (lm == null) {
+            lm = new ListenerMate(c);
+            listenerMateMap.put(c, lm);
+        }
+        return lm;
     }
 
     private static Iterable<Node> iterable(final NodeList nodeList) {
@@ -805,179 +989,9 @@ public class GuiParser {
         return children;
     }
 
-    @SuppressWarnings("unchecked")
-    private <V> V evaluate(String literalValue, Class<V> valueClass) {
-        valueClass = ReflectionUtils.wrap(valueClass);
-        Converter<V> converter = CONVERTER_MANAGER.getConverter(valueClass);
-        Object value = literalValue;
-        if (literalValue.startsWith("#{") && literalValue.endsWith("}")) {
-            String expression = literalValue.substring(2, literalValue.length() - 1);
-            List<String> operators = StringUtils.split(expression, ".",
-                    DelimitationStyle.IGNORE_DELIMITER, false, 1);
-            String type = operators.get(0);
-            String target = operators.get(1);
-            switch (type) {
-                case "env":
-                    value = System.getenv(target);
-                    break;
-                case "new":
-                    value = ReflectionUtils.newInstance(getClass(target));
-                    break;
-                case "ref":
-                    value = objectMap.get(target);
-                    break;
-                case "res":
-                    value = ResourceBundle.getBundle(resourceBundleName,
-                            Locale.getDefault(), controllerLoader,
-                            FallbackLocaleControl.EN_US_CONTROL).getObject(target);
-                    break;
-                case "sys":
-                    value = System.getProperty(target);
-                    break;
-                case "uid":
-                    value = UIManager.get(target, Locale.getDefault());
-                    break;
-                default:
-                    value = ReflectionUtils.getValue(
-                            ReflectionUtils.getField(getClass(type), target), null);
-            }
-        }
-        if (valueClass.isInstance(value)) {
-            return valueClass.cast(value);
-        } else {
-            return converter.asObject(value.toString());
-        }
-    }
-
-    @SuppressWarnings("UseSpecificCatch")
-    private <V> V evaluate(String literalValue,
-            Class<V> valueClass, V nullDefault) {
-        return literalValue == null ? nullDefault : evaluate(literalValue, valueClass);
-    }
-
     private static boolean isLocalizable(String exp) {
         return (exp.startsWith("#{res.") || exp.startsWith("#{uid."))
                 && exp.endsWith("}");
-    }
-
-    /**
-     * Parses a GUI XML.
-     * <p>
-     * This method is a convenient variant of {@link #parse(String, Object,
-     * Map) parse(String, Object, Map)} where there are no existing objects.
-     *
-     * @param guiXmlName The resource name of the GUI XML.
-     * @param controller The GUI controller instance.
-     */
-    public static void parse(String guiXmlName, Object controller) {
-        parse(controller.getClass().getResourceAsStream(guiXmlName), controller, null);
-    }
-
-    /**
-     * Parses a GUI XML, with a map containing already created objects.
-     * <p>
-     * This method is a convenient variant of {@link #parse(InputStream, Object,
-     * Map) parse(InputStream, Object, Map)} where the GUI XML is a class path
-     * resource.
-     *
-     * @param guiXmlName        The resource name of the GUI XML.
-     * @param controller        The GUI controller instance.
-     * @param existingObjectMap A map containing existing ID-object pairs.
-     */
-    public static void parse(String guiXmlName, Object controller,
-            Map<String, Object> existingObjectMap) {
-        parse(controller.getClass().getResourceAsStream(guiXmlName),
-                controller, existingObjectMap);
-    }
-
-    /**
-     * Parses a GUI XML.
-     * <p>
-     * This method is a convenient variant of {@link #parse(InputStream, Object,
-     * Map) parse(InputStream, Object, Map)} where there are no existing objects.
-     *
-     * @param guiXmlIn   The input stream from which to read the XML GUI
-     *                   declaration. It remains open after this method has
-     *                   returned.
-     * @param controller The controller instance.
-     */
-    public static void parse(InputStream guiXmlIn, Object controller) {
-        parse(guiXmlIn, controller, null);
-    }
-
-    /**
-     * Parses a GUI XML, with a map containing already created objects.
-     * <p>
-     * The GUI controller class can optionally declares fields with their types
-     * and names matching the elements declared in the GUI XML. If the GUI XML
-     * has an element with the tag name as the simple name of the controller's
-     * class, the element represents the GUI controller itself. This is typically
-     * useful when the controller is a component.
-     * <p>
-     * The {@code existingBeanMap} may contain already created objects. While
-     * parsing an element, if the element's ID is already associated with a object
-     * in this map, that object is directly used instead of reflectively creating
-     * a new one with the default constructor.
-     *
-     * @param guiXmlIn          The input stream from which to read the XML GUI
-     *                          declaration. It remains open after this method
-     *                          has returned.
-     * @param controller        The controller instance.
-     * @param existingObjectMap A map containing existing ID-bean pairs.
-     */
-    public static void parse(InputStream guiXmlIn, Object controller,
-            Map<String, Object> existingObjectMap)  {
-        try {
-            new GuiParser(DOCUMENT_BUILDER.parse(guiXmlIn),
-                    controller, existingObjectMap).parse();
-        } catch (IOException | SAXException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    private static void setMnemonic(JLabel label) {
-        Mnemonic mnemonic = analyzeMnemonic(label.getText());
-        if (mnemonic != null) {
-            label.setText(mnemonic.text);
-            label.setDisplayedMnemonic(mnemonic.mnemonicChar);
-            label.setDisplayedMnemonicIndex(mnemonic.mnemonicIndex);
-        }
-    }
-
-    private static void setMnemonic(AbstractButton button) {
-        Mnemonic mnemonic = analyzeMnemonic(button.getText());
-        if (mnemonic != null) {
-            button.setText(mnemonic.text);
-            button.setMnemonic(mnemonic.mnemonicChar);
-            button.setDisplayedMnemonicIndex(mnemonic.mnemonicIndex);
-        }
-    }
-
-    private static Mnemonic analyzeMnemonic(String text) {
-        if (text == null) {
-            return null;
-        }
-
-        boolean isHtml = BasicHTML.isHTMLString(text);
-        Matcher matcher = MNEMONIC_PATTERN.matcher(text);
-        if (matcher.find()) {
-            String mnemonicMark = matcher.group();
-            char mnemonicChar = mnemonicMark.charAt(1);
-            int start = matcher.start();
-            int end = matcher.end();
-            StringBuilder sb = new StringBuilder()
-                    .append(text.substring(0, start));
-            if (isHtml) {
-                // HTML can be complex so it doesn't always work as expected.
-                sb.append("<u>").append(mnemonicChar).append("</u>");
-            } else {
-                sb.append(mnemonicChar);
-            }
-            sb.append(text.substring(end));
-            return new Mnemonic(sb.toString(), mnemonicChar, start);
-        } else {
-            return null;
-        }
     }
 
     private static class BeanMate {
@@ -1019,18 +1033,6 @@ public class GuiParser {
         @Override
         protected String asStringInternal(T object) {
             throw new UnsupportedOperationException("Not supported.");
-        }
-    }
-
-    private static class Mnemonic {
-        private String text;
-        private char mnemonicChar;
-        private int mnemonicIndex;
-
-        private Mnemonic(String text, char mnemonicChar, int mnemonicIndex) {
-            this.text = text;
-            this.mnemonicChar = mnemonicChar;
-            this.mnemonicIndex = mnemonicIndex;
         }
     }
 }
