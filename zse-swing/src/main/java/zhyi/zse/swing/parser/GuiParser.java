@@ -374,6 +374,11 @@ public class GuiParser {
                         }
                         break;
                     case Node.ELEMENT_NODE:    // The unique root node.
+                        if (bundle == null) {
+                            // Assume the resource bundle has the same name
+                            // as the controller's class.
+                            bundle = controllerClass.getName();
+                        }
                         for (Element child : getChildren((Element) node, "*")) {
                             createBean(child);
                         }
