@@ -27,8 +27,8 @@ import java.util.Set;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.event.EventListenerList;
-import zhyi.zse.swing.event.SelectionEvent;
-import zhyi.zse.swing.event.SelectionListener;
+import zhyi.zse.swing.event.SelectionChangeEvent;
+import zhyi.zse.swing.event.SelectionChangeListener;
 
 /**
  * Groups multiple buttons together as a single-value selector.
@@ -56,9 +56,9 @@ public class SingleValueSelector<T> {
             @Override
             @SuppressWarnings("unchecked")
             public void itemStateChanged(ItemEvent e) {
-                for (SelectionListener<? super T> l
-                        : selectionListeners.getListeners(SelectionListener.class)) {
-                    l.selectionChanged(new SelectionEvent<>(SingleValueSelector.this));
+                for (SelectionChangeListener<? super T> l
+                        : selectionListeners.getListeners(SelectionChangeListener.class)) {
+                    l.selectionChanged(new SelectionChangeEvent<>(SingleValueSelector.this));
                 }
             }
         };
@@ -177,8 +177,8 @@ public class SingleValueSelector<T> {
      *
      * @param l The selection change listener to be added.
      */
-    public void addSelectionChangeListener(SelectionListener<? super T> l) {
-        selectionListeners.add(SelectionListener.class, l);
+    public void addSelectionChangeListener(SelectionChangeListener<? super T> l) {
+        selectionListeners.add(SelectionChangeListener.class, l);
     }
 
     /**
@@ -186,7 +186,7 @@ public class SingleValueSelector<T> {
      *
      * @param l The selection listener to be removed.
      */
-    public void removeSelectionChangeListener(SelectionListener<? super T> l) {
-        selectionListeners.remove(SelectionListener.class, l);
+    public void removeSelectionChangeListener(SelectionChangeListener<? super T> l) {
+        selectionListeners.remove(SelectionChangeListener.class, l);
     }
 }

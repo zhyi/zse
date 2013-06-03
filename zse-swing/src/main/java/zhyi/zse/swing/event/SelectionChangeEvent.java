@@ -36,13 +36,13 @@ import zhyi.zse.swing.SingleValueSelector;
  * @see MultiValueSelector
  */
 @SuppressWarnings("serial")
-public class SelectionEvent<T> extends EventObject {
+public class SelectionChangeEvent<T> extends EventObject {
     /**
      * Constructs a new instance with a single value selector as the source object.
      *
      * @param source The source single value selector.
      */
-    public SelectionEvent(SingleValueSelector<T> source) {
+    public SelectionChangeEvent(SingleValueSelector<? extends T> source) {
         super(source);
     }
 
@@ -51,7 +51,7 @@ public class SelectionEvent<T> extends EventObject {
      *
      * @param source The source multi-value selector.
      */
-    public SelectionEvent(MultiValueSelector<T> source) {
+    public SelectionChangeEvent(MultiValueSelector<? extends T> source) {
         super(source);
     }
 }

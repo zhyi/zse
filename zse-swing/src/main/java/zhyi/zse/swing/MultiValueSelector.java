@@ -32,8 +32,8 @@ import java.util.Objects;
 import java.util.Set;
 import javax.swing.AbstractButton;
 import javax.swing.event.EventListenerList;
-import zhyi.zse.swing.event.SelectionEvent;
-import zhyi.zse.swing.event.SelectionListener;
+import zhyi.zse.swing.event.SelectionChangeEvent;
+import zhyi.zse.swing.event.SelectionChangeListener;
 
 /**
  * Groups multiple buttons together as a multi-value selector.
@@ -59,9 +59,9 @@ public class MultiValueSelector<T> {
             @Override
             @SuppressWarnings("unchecked")
             public void itemStateChanged(ItemEvent e) {
-                for (SelectionListener<? super T> l
-                        : selectionListeners.getListeners(SelectionListener.class)) {
-                    l.selectionChanged(new SelectionEvent<>(MultiValueSelector.this));
+                for (SelectionChangeListener<? super T> l
+                        : selectionListeners.getListeners(SelectionChangeListener.class)) {
+                    l.selectionChanged(new SelectionChangeEvent<>(MultiValueSelector.this));
                 }
             }
         };
@@ -138,13 +138,29 @@ public class MultiValueSelector<T> {
      * @return The selected values as a list.
      */
     public List<T> getSelectedValues() {
-        List<T> selectedValues = new ArrayList<>();
+        return getValues(true);
+    }
+
+    /**
+     * Returns a list containing the values associated with the unselected buttons,
+     * or an empty list if all button are selected.
+     *
+     * @return The unselected values as a list.
+     */
+    public List<T> getUnselectedValues() {
+        return getValues(false);
+    }
+
+    private List<T> getValues(boolean selected) {
+        List<T> values = new ArrayList<>();
         for (Entry<AbstractButton, T> e : buttonValueMap.entrySet()) {
-            if (e.getKey().isSelected()) {
-                selectedValues.add(e.getValue());
+            if (selected && e.getKey().isSelected()) {
+                values.add(e.getValue());
+            } else if (!selected && !e.getKey().isSelected()) {
+                values.add(e.getValue());
             }
         }
-        return selectedValues;
+        return values;
     }
 
     /**
@@ -206,8 +222,8 @@ public class MultiValueSelector<T> {
      *
      * @param l The selection change listener to be added.
      */
-    public void addSelectionChangeListener(SelectionListener<? super T> l) {
-        selectionListeners.add(SelectionListener.class, l);
+    public void addSelectionChangeListener(SelectionChangeListener<? super T> l) {
+        selectionListeners.add(SelectionChangeListener.class, l);
     }
 
     /**
@@ -215,7 +231,7 @@ public class MultiValueSelector<T> {
      *
      * @param l The selection listener to be removed.
      */
-    public void removeSelectionChangeListener(SelectionListener<? super T> l) {
-        selectionListeners.remove(SelectionListener.class, l);
+    public void removeSelectionChangeListener(SelectionChangeListener<? super T> l) {
+        selectionListeners.remove(SelectionChangeListener.class, l);
     }
 }

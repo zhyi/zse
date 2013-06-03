@@ -19,7 +19,8 @@ package zhyi.zse.swing.event;
 import java.util.EventListener;
 
 /**
- * The listener interface for receiving selection events fired by value selectors.
+ * The listener interface for receiving selection change events fired by value
+ * selectors.
  *
  * @param <T> The selector's value type.
  *
@@ -28,11 +29,11 @@ import java.util.EventListener;
  * @see SingleValueSelector
  * @see MultiValueSelector
  */
-public interface SelectionListener<T> extends EventListener {
+public interface SelectionChangeListener<T> extends EventListener {
     /**
      * Invoked when the selection has been changed.
      *
      * @param e The selection change event.
      */
-    void selectionChanged(SelectionEvent<? extends T> e);
+    void selectionChanged(SelectionChangeEvent<? extends T> e);
 }
