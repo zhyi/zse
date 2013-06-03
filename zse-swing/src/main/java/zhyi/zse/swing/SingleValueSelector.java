@@ -18,10 +18,12 @@ package zhyi.zse.swing;
 
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.event.EventListenerList;
@@ -81,6 +83,29 @@ public class SingleValueSelector<T> {
     }
 
     /**
+     * Returns the value associated with the specified button.
+     * <p>
+     * A {@code null} return can either mean the button is not contained in this
+     * selector, or the button is associated with {@code null}.
+     *
+     * @param button The button.
+     *
+     * @return The button's associating value.
+     */
+    public T getValue(AbstractButton button) {
+        return buttonValueMap.get(button);
+    }
+
+    /**
+     * Returns all buttons contained in this selector a read-only set.
+     *
+     * @return A read-only set containing all added buttons.
+     */
+    public Set<AbstractButton> getButtons() {
+        return Collections.unmodifiableSet(buttonValueMap.keySet());
+    }
+
+    /**
      * Removes a button and its associated value from this selector.
      * <p>
      * The button is also removed from the implicit {@link ButtonGroup}.
@@ -94,6 +119,18 @@ public class SingleValueSelector<T> {
         buttonValueMap.remove(button);
         buttonGroup.remove(button);
         return this;
+    }
+
+    /**
+     * Removes all buttons contained and their associated values from this
+     * selector.
+     */
+    public void removeAll() {
+        for (AbstractButton button : buttonValueMap.keySet()) {
+            button.removeItemListener(itemListener);
+            buttonGroup.remove(button);
+        }
+        buttonValueMap.clear();
     }
 
     /**

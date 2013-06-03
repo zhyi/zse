@@ -21,6 +21,7 @@ import java.awt.event.ItemListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import javax.swing.AbstractButton;
 import javax.swing.event.EventListenerList;
 import zhyi.zse.swing.event.SelectionEvent;
@@ -83,6 +85,29 @@ public class MultiValueSelector<T> {
     }
 
     /**
+     * Returns the value associated with the specified button.
+     * <p>
+     * A {@code null} return can either mean the button is not contained in this
+     * selector, or the button is associated with {@code null}.
+     *
+     * @param button The button.
+     *
+     * @return The button's associating value.
+     */
+    public T getValue(AbstractButton button) {
+        return buttonValueMap.get(button);
+    }
+
+    /**
+     * Returns all buttons contained in this selector a read-only set.
+     *
+     * @return A read-only set containing all added buttons.
+     */
+    public Set<AbstractButton> getButtons() {
+        return Collections.unmodifiableSet(buttonValueMap.keySet());
+    }
+
+    /**
      * Removes a button and its associated value from this selector.
      *
      * @param button The button to be removed.
@@ -93,6 +118,17 @@ public class MultiValueSelector<T> {
         button.removeItemListener(itemListener);
         buttonValueMap.remove(button);
         return this;
+    }
+
+    /**
+     * Removes all buttons contained and their associated values from this
+     * selector.
+     */
+    public void removeAll() {
+        for (AbstractButton button : buttonValueMap.keySet()) {
+            button.removeItemListener(itemListener);
+        }
+        buttonValueMap.clear();
     }
 
     /**
