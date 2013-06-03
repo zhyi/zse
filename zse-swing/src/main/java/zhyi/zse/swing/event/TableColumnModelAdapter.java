@@ -16,24 +16,34 @@
  */
 package zhyi.zse.swing.event;
 
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
 
 /**
- * The adapter class for {@link PopupMenuListener}.
+ * The adapter class for {@link TableColumnModelListener}.
  *
  * @author Zhao Yi
  */
-public class PopupMenuAdapter implements PopupMenuListener {
+public class TableColumnModelAdapter implements TableColumnModelListener {
     @Override
-    public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+    public void columnAdded(TableColumnModelEvent e) {
     }
 
     @Override
-    public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+    public void columnRemoved(TableColumnModelEvent e) {
     }
 
     @Override
-    public void popupMenuCanceled(PopupMenuEvent e) {
+    public void columnMoved(TableColumnModelEvent e) {
+    }
+
+    @Override
+    public void columnMarginChanged(ChangeEvent e) {
+    }
+
+    @Override
+    public void columnSelectionChanged(ListSelectionEvent e) {
     }
 }
