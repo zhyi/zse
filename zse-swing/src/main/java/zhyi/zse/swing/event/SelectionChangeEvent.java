@@ -17,6 +17,7 @@
 package zhyi.zse.swing.event;
 
 import java.util.EventObject;
+import javax.swing.AbstractButton;
 import zhyi.zse.swing.MultiValueSelector;
 import zhyi.zse.swing.SingleValueSelector;
 
@@ -28,6 +29,7 @@ import zhyi.zse.swing.SingleValueSelector;
  * {@link SingleValueSelector} or {@link MultiValueSelector}, on which this event
  * initially occurred.
  *
+ * @param <B> The selector's button type.
  * @param <T> The selector's value type.
  *
  * @author Zhao Yi
@@ -36,13 +38,13 @@ import zhyi.zse.swing.SingleValueSelector;
  * @see MultiValueSelector
  */
 @SuppressWarnings("serial")
-public class SelectionChangeEvent<T> extends EventObject {
+public class SelectionChangeEvent<B extends AbstractButton, T> extends EventObject {
     /**
      * Constructs a new instance with a single value selector as the source object.
      *
      * @param source The source single value selector.
      */
-    public SelectionChangeEvent(SingleValueSelector<? extends T> source) {
+    public SelectionChangeEvent(SingleValueSelector<? extends B, ? extends T> source) {
         super(source);
     }
 
@@ -51,7 +53,7 @@ public class SelectionChangeEvent<T> extends EventObject {
      *
      * @param source The source multi-value selector.
      */
-    public SelectionChangeEvent(MultiValueSelector<? extends T> source) {
+    public SelectionChangeEvent(MultiValueSelector<? extends B, ? extends T> source) {
         super(source);
     }
 }

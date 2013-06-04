@@ -40,12 +40,13 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  * <p>
  * This class is typically useful to manage check boxes.
  *
+ * @param <B> The button's type.
  * @param <T> The value's type.
  *
  * @author Zhao Yi
  */
-public class MultiValueSelector<T> {
-    private Map<AbstractButton, T> buttonValueMap;
+public class MultiValueSelector<B extends AbstractButton, T> {
+    private Map<B, T> buttonValueMap;
     private EventListenerList selectionListeners;
     private ItemListener itemListener;
 
@@ -59,7 +60,7 @@ public class MultiValueSelector<T> {
             @Override
             @SuppressWarnings("unchecked")
             public void itemStateChanged(ItemEvent e) {
-                for (SelectionChangeListener<? super T> l
+                for (SelectionChangeListener<? super B, ? super T> l
                         : selectionListeners.getListeners(SelectionChangeListener.class)) {
                     l.selectionChanged(new SelectionChangeEvent<>(MultiValueSelector.this));
                 }
@@ -78,7 +79,7 @@ public class MultiValueSelector<T> {
      *
      * @return This selector for chained invocations.
      */
-    public MultiValueSelector<T> add(AbstractButton button, T value) {
+    public MultiValueSelector<B, T> add(B button, T value) {
         button.addItemListener(itemListener);
         buttonValueMap.put(button, value);
         return this;
@@ -94,7 +95,7 @@ public class MultiValueSelector<T> {
      *
      * @return The button's associating value.
      */
-    public T getValue(AbstractButton button) {
+    public T getValue(B button) {
         return buttonValueMap.get(button);
     }
 
@@ -103,7 +104,7 @@ public class MultiValueSelector<T> {
      *
      * @return A read-only set containing all added buttons.
      */
-    public Set<AbstractButton> getButtons() {
+    public Set<B> getButtons() {
         return Collections.unmodifiableSet(buttonValueMap.keySet());
     }
 
@@ -114,7 +115,7 @@ public class MultiValueSelector<T> {
      *
      * @return This selector for chained invocations.
      */
-    public MultiValueSelector<T> remove(AbstractButton button) {
+    public MultiValueSelector<B, T> remove(B button) {
         button.removeItemListener(itemListener);
         buttonValueMap.remove(button);
         return this;
@@ -153,7 +154,7 @@ public class MultiValueSelector<T> {
 
     private List<T> getValues(boolean selected) {
         List<T> values = new ArrayList<>();
-        for (Entry<AbstractButton, T> e : buttonValueMap.entrySet()) {
+        for (Entry<B, T> e : buttonValueMap.entrySet()) {
             if (selected && e.getKey().isSelected()) {
                 values.add(e.getValue());
             } else if (!selected && !e.getKey().isSelected()) {
@@ -192,7 +193,7 @@ public class MultiValueSelector<T> {
     public void setSelectedValues(Collection<T> values) {
         List<T> valueList = new LinkedList<>(values);
         boolean found;
-        for (Entry<AbstractButton, T> e : buttonValueMap.entrySet()) {
+        for (Entry<B, T> e : buttonValueMap.entrySet()) {
             found = false;
             T buttonValue = e.getValue();
             Iterator<T> it = valueList.iterator();
@@ -222,7 +223,8 @@ public class MultiValueSelector<T> {
      *
      * @param l The selection change listener to be added.
      */
-    public void addSelectionChangeListener(SelectionChangeListener<? super T> l) {
+    public void addSelectionChangeListener(
+            SelectionChangeListener<? super B, ? super T> l) {
         selectionListeners.add(SelectionChangeListener.class, l);
     }
 
@@ -231,7 +233,8 @@ public class MultiValueSelector<T> {
      *
      * @param l The selection listener to be removed.
      */
-    public void removeSelectionChangeListener(SelectionChangeListener<? super T> l) {
+    public void removeSelectionChangeListener(
+            SelectionChangeListener<? super B, ? super T> l) {
         selectionListeners.remove(SelectionChangeListener.class, l);
     }
 }

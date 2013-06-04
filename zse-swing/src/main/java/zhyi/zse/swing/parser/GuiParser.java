@@ -479,7 +479,8 @@ public class GuiParser {
                         ((ButtonGroup) bean).add((AbstractButton)
                                 objectMap.get(getAttribute(child, "ref")));
                     } else if (bean instanceof SingleValueSelector) {
-                        SingleValueSelector<Object> svs = (SingleValueSelector<Object>) bean;
+                        SingleValueSelector<AbstractButton, Object> svs
+                                = (SingleValueSelector<AbstractButton, Object>) bean;
                         Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
                         AbstractButton button = (AbstractButton)
                                 objectMap.get(getAttribute(child, "ref"));
@@ -490,7 +491,8 @@ public class GuiParser {
                             button.setSelected(true);
                         }
                     } else if (bean instanceof MultiValueSelector) {
-                        MultiValueSelector<Object> mvs = (MultiValueSelector<Object>) bean;
+                        MultiValueSelector<AbstractButton, Object> mvs
+                                = (MultiValueSelector<AbstractButton, Object>) bean;
                         Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
                         AbstractButton button = (AbstractButton)
                                 objectMap.get(getAttribute(child, "ref"));

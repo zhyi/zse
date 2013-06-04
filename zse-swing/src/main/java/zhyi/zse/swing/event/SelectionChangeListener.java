@@ -17,11 +17,13 @@
 package zhyi.zse.swing.event;
 
 import java.util.EventListener;
+import javax.swing.AbstractButton;
 
 /**
  * The listener interface for receiving selection change events fired by value
  * selectors.
  *
+ * @param <B> The selector's button type.
  * @param <T> The selector's value type.
  *
  * @author Zhao Yi
@@ -29,11 +31,11 @@ import java.util.EventListener;
  * @see SingleValueSelector
  * @see MultiValueSelector
  */
-public interface SelectionChangeListener<T> extends EventListener {
+public interface SelectionChangeListener<B extends AbstractButton, T> extends EventListener {
     /**
      * Invoked when the selection has been changed.
      *
      * @param e The selection change event.
      */
-    void selectionChanged(SelectionChangeEvent<? extends T> e);
+    void selectionChanged(SelectionChangeEvent<? extends B, ? extends T> e);
 }

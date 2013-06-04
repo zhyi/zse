@@ -35,11 +35,12 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  * <p>
  * This class is typically useful to manage radio buttons.
  *
+ * @param <B> The button's type.
  * @param <T> The value's type.
  *
  * @author Zhao Yi
  */
-public class SingleValueSelector<T> {
+public class SingleValueSelector<B extends AbstractButton, T> {
     private Map<AbstractButton, T> buttonValueMap;
     private ButtonGroup buttonGroup;
     private EventListenerList selectionListeners;
@@ -56,7 +57,7 @@ public class SingleValueSelector<T> {
             @Override
             @SuppressWarnings("unchecked")
             public void itemStateChanged(ItemEvent e) {
-                for (SelectionChangeListener<? super T> l
+                for (SelectionChangeListener<? super B, ? super T> l
                         : selectionListeners.getListeners(SelectionChangeListener.class)) {
                     l.selectionChanged(new SelectionChangeEvent<>(SingleValueSelector.this));
                 }
@@ -75,7 +76,7 @@ public class SingleValueSelector<T> {
      *
      * @return This selector for chained invocations.
      */
-    public SingleValueSelector<T> add(AbstractButton button, T value) {
+    public SingleValueSelector<B, T> add(B button, T value) {
         button.addItemListener(itemListener);
         buttonValueMap.put(button, value);
         buttonGroup.add(button);
@@ -114,7 +115,7 @@ public class SingleValueSelector<T> {
      *
      * @return This selector for chained invocations.
      */
-    public SingleValueSelector<T> remove(AbstractButton button) {
+    public SingleValueSelector<B, T> remove(B button) {
         button.removeItemListener(itemListener);
         buttonValueMap.remove(button);
         buttonGroup.remove(button);
@@ -177,7 +178,8 @@ public class SingleValueSelector<T> {
      *
      * @param l The selection change listener to be added.
      */
-    public void addSelectionChangeListener(SelectionChangeListener<? super T> l) {
+    public void addSelectionChangeListener(
+            SelectionChangeListener<? super B, ? super T> l) {
         selectionListeners.add(SelectionChangeListener.class, l);
     }
 
@@ -186,7 +188,8 @@ public class SingleValueSelector<T> {
      *
      * @param l The selection listener to be removed.
      */
-    public void removeSelectionChangeListener(SelectionChangeListener<? super T> l) {
+    public void removeSelectionChangeListener(
+            SelectionChangeListener<? super B, ? super T> l) {
         selectionListeners.remove(SelectionChangeListener.class, l);
     }
 }
