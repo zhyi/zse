@@ -96,7 +96,7 @@ import zhyi.zse.lang.ReflectionUtils;
  * </ul>
  * <b>Fixes for Windows 7 Aero Look And Feel Issues</b>
  * <ul>
- * <li>Combo boxes have extra gray borders.
+ * <li>Combo boxes have wrong borders.
  * <li>Menu bar menus are insufficiently padded.
  * <li>Inactive or disabled text components have wrong background colors.
  * <li>Inactive text components have wrong cursors.
@@ -248,7 +248,7 @@ public abstract class SwingApplication {
                 if (Double.parseDouble(System.getProperty("os.version")) >= 6.0
                         && Boolean.TRUE.equals(Toolkit.getDefaultToolkit()
                                 .getDesktopProperty("win.xpstyle.themeActive"))) {
-                    uid.put("ComboBox.border", null);
+                    uid.put("ComboBox.border", BorderFactory.createEmptyBorder(1, 2, 1, 1));
                     uid.put("Menu.border", BorderFactory.createEmptyBorder(0, 3, 0, 3));
                     uid.put("TextArea.inactiveBackground",
                             UIManager.get("TextArea.disabledBackground"));
