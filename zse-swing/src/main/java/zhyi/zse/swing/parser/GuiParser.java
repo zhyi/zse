@@ -289,7 +289,7 @@ public class GuiParser {
      * the GUI components defined in the controller.
      * <p>
      * This method is a convenient variant of {@link #parse(Object, Map)
-     * parse(Object, Map)}
+     * parse(Object, Map)} when there are no existing objects.
      *
      * @param controller The controller instance.
      */
