@@ -23,6 +23,7 @@ import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionAdapter;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Method;
@@ -33,6 +34,10 @@ import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JPopupMenu;
 import javax.swing.JTable;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableModelEvent;
 import javax.swing.plaf.basic.BasicHTML;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI.MouseInputHandler;
@@ -54,6 +59,7 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  * <li>Column width can be resized to fit cells by double clicking header
  * separators.
  * <li>Columns can be filtered with the header's popup menu.
+ * <li>Cell editor is removed on table change to prevent runtime exceptions.
  * <li>Row sorter and view port height filling are enabled by default.
  * </ul>
  *
@@ -65,6 +71,7 @@ public class FitTable extends JTable {
             = ReflectionUtils.getDeclaredMethod(
                     BasicTableHeaderUI.class, "getHeaderRenderer", int.class);
 
+    private Component activeRenderer;
     private MouseListener tableHeaderMouseListener;
     private MouseListener delegatedRowSortingListener;
     private PropertyChangeListener tableHeaderUiChangeListener;
@@ -90,6 +97,7 @@ public class FitTable extends JTable {
         setAutoCreateRowSorter(true);
         setFillsViewportHeight(true);
         hiddenColumnMap = new IdentityHashMap<>();
+        addMouseMotionListener(new CellSelectionListener());
     }
 
     @Override
@@ -106,38 +114,70 @@ public class FitTable extends JTable {
                     "UI", tableHeaderUiChangeListener);
         }
         super.setTableHeader(newHeader);
-        newHeader.addMouseListener(tableHeaderMouseListener);
-        newHeader.addPropertyChangeListener("UI", tableHeaderUiChangeListener);
-        tableHeaderUiChangeListener.propertyChange(null);
+        if (newHeader != null) {
+            newHeader.addMouseListener(tableHeaderMouseListener);
+            newHeader.addPropertyChangeListener("UI", tableHeaderUiChangeListener);
+            tableHeaderUiChangeListener.propertyChange(null);
+        }
     }
 
     @Override
-    public void repaint(long tm, int x, int y, int width, int height) {
-        super.repaint(tm, x, y, width, height);
-
-        if (!initialized) {
-            return;
+    public void tableChanged(TableModelEvent e) {
+        // JTable's implementation doesn't remove the cell editor, which results
+        // in runtime expections.
+        if (isEditing()) {
+            removeEditor();
         }
-
-        int firstRow = rowAtPoint(new Point(x, y));
-        int lastRow = rowAtPoint(new Point(x, y + height));
-        if (firstRow == -1 && lastRow == -1) {
-            return;
-        }
-
-        if (firstRow == -1) {
-            firstRow = 0;
-        }
-        if (lastRow == -1) {
-            lastRow = getRowCount() - 1;
-        }
-        for (int row = firstRow; row <= lastRow; row++) {
-            int rh = rowHeight;
-            for (int column = 0; column < getColumnCount(); column++) {
-                rh = Math.max(rh, getCellSize(row, column).height);
+        super.tableChanged(e);
+        if (e.getFirstRow() == TableModelEvent.HEADER_ROW) {
+            fitAllRowHeights();
+        } else {
+            for (int i = e.getFirstRow(); i <= e.getLastRow(); i++) {
+                fitRowHeight(i);
             }
-            if (rh != getRowHeight(row)) {
-                setRowHeight(row, rh);
+        }
+    }
+
+    @Override
+    public void valueChanged(ListSelectionEvent e) {
+        super.valueChanged(e);
+        if (e.getValueIsAdjusting()) {
+            fitRowHeight(e.getFirstIndex());
+            if (e.getFirstIndex() != e.getLastIndex()) {
+                fitRowHeight(e.getLastIndex());
+            }
+        }
+    }
+
+    @Override
+    public void columnAdded(TableColumnModelEvent e) {
+        super.columnAdded(e);
+        fitAllRowHeights();
+    }
+
+    @Override
+    public void columnRemoved(TableColumnModelEvent e) {
+        super.columnRemoved(e);
+        fitAllRowHeights();
+    }
+
+    @Override
+    public void columnMarginChanged(ChangeEvent e) {
+        super.columnMarginChanged(e);
+        fitAllRowHeights();
+    }
+
+    @Override
+    public void columnSelectionChanged(ListSelectionEvent e) {
+        super.columnSelectionChanged(e);
+        if (e.getValueIsAdjusting()) {
+            if (getColumnSelectionAllowed() && !getRowSelectionAllowed()) {
+                fitAllRowHeights();
+            } else {
+                int focusedRow = getSelectionModel().getLeadSelectionIndex();
+                if (focusedRow != -1) {
+                    fitRowHeight(focusedRow);
+                }
             }
         }
     }
@@ -155,6 +195,7 @@ public class FitTable extends JTable {
             TableCellEditor editor, int row, int column) {
         Component c = super.prepareEditor(editor, row, column);
         resizeHtmlView(c, column);
+        fitRowHeight(row);
         return c;
     }
 
@@ -175,7 +216,27 @@ public class FitTable extends JTable {
         }
     }
 
-    private void resizeColumnWidth(int column) {
+    private void fitAllRowHeights() {
+        for (int i = 0; i < getRowCount(); i++) {
+            fitRowHeight(i);
+        }
+    }
+
+    private void fitRowHeight(int row) {
+        if (!initialized) {
+            return;
+        }
+
+        int rh = rowHeight;
+        for (int column = 0; column < getColumnCount(); column++) {
+            rh = Math.max(rh, getCellSize(row, column).height);
+        }
+        if (rh != getRowHeight(row)) {
+            setRowHeight(row, rh);
+        }
+    }
+
+    private void fitColumnWidth(int column) {
         if (column == -1) {
             return;
         }
@@ -220,8 +281,7 @@ public class FitTable extends JTable {
 
     private Dimension getCellSize(int row, int column) {
         return row == editingRow && column == editingColumn
-                ? prepareEditor(getCellEditor(row, column),
-                        row, column).getPreferredSize()
+                ? editorComp.getPreferredSize()
                 : prepareRenderer(getCellRenderer(row, column),
                         row, column).getPreferredSize();
     }
@@ -244,7 +304,7 @@ public class FitTable extends JTable {
             Iterator<TableColumn> it = hiddenColumnMap.keySet().iterator();
             while (it.hasNext()) {
                 TableColumn hiddenColumn = it.next();
-                if (getColumnIndex(hiddenColumn) != -1) {
+                if (getColumnIndex(hiddenColumn) == -1) {
                     it.remove();
                 }
             }
@@ -281,6 +341,25 @@ public class FitTable extends JTable {
             i++;
         }
         return index;
+    }
+
+    private class CellSelectionListener extends MouseMotionAdapter {
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            Point p = e.getPoint();
+            int row = rowAtPoint(p);
+            int column = columnAtPoint(p);
+            if (activeRenderer != null) {
+                Rectangle rec = activeRenderer.getBounds();
+                if (!rec.contains(p)) {
+                    remove(activeRenderer);
+                    activeRenderer = null;
+                    repaint(rec);
+                }
+            } else {
+                
+            }
+        }
     }
 
     /**
@@ -332,7 +411,7 @@ public class FitTable extends JTable {
                     || e.getClickCount() != 2) {
                 return;
             }
-            resizeColumnWidth(getResizingColumn(e.getPoint()));
+            fitColumnWidth(getResizingColumn(e.getPoint()));
         }
 
         @Override
@@ -368,14 +447,17 @@ public class FitTable extends JTable {
         }
     }
 
-    private class ColumnSelectionChangeListener implements SelectionChangeListener<JCheckBoxMenuItem, TableColumn> {
+    private class ColumnSelectionChangeListener
+            implements SelectionChangeListener<JCheckBoxMenuItem, TableColumn> {
         @Override
-        public void selectionChanged(SelectionChangeEvent<? extends JCheckBoxMenuItem, ? extends TableColumn> e) {
+        public void selectionChanged(
+                SelectionChangeEvent<? extends JCheckBoxMenuItem, ? extends TableColumn> e) {
             for (JCheckBoxMenuItem columnCheckBox : columnSelector.getButtons()) {
                 TableColumn tableColumn = columnSelector.getValue(columnCheckBox);
 
                 // Show a hidden column.
-                if (columnCheckBox.isSelected() && hiddenColumnMap.containsKey(tableColumn)) {
+                if (columnCheckBox.isSelected()
+                        && hiddenColumnMap.containsKey(tableColumn)) {
                     // Size back the hidden column.
                     ColumnInfo columnInfo = hiddenColumnMap.remove(tableColumn);
                     tableColumn.setMinWidth(columnInfo.minWidth);
@@ -401,7 +483,7 @@ public class FitTable extends JTable {
                 }
 
                 // Hide a visible column.
-                if (columnCheckBox.isSelected()
+                if (!columnCheckBox.isSelected()
                         && !hiddenColumnMap.containsKey(tableColumn)) {
                     int originalIndex = getColumnIndex(tableColumn);
                     hiddenColumnMap.put(tableColumn,
