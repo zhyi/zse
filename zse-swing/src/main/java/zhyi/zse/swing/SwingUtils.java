@@ -85,6 +85,8 @@ public final class SwingUtils {
     private static final PopupFactory SHADOW_POPUP_FACTORY = new ShadowPopupFactory();
     private static final AWTEventListener TEXT_COMPONENT_POPUP_MONITOR
             = new TextComponentPopupMonitor();
+    private static final Method GET_PROPERTY_PREFIX
+            = ReflectionUtils.getDeclaredMethod(BasicTextUI.class, "getPropertyPrefix");
 
     private static boolean containersMonitored;
     private static boolean lafMonitored;
@@ -472,8 +474,6 @@ public final class SwingUtils {
         private static final Decoder DECODER = new Decoder();
         private static final Color INACTIVE_TEXT_BACKGROUND = DECODER.decodeColor0(
                 "nimbusBlueGrey", -0.015872955F, -0.07995863F, 0.15294117F, 0);
-        private static final Method GET_PROPERTY_PREFIX
-                = ReflectionUtils.getDeclaredMethod(BasicTextUI.class, "getPropertyPrefix");
 
         private AbstractRegionPainter originalPainter;
         private Rectangle2D.Float rec;
@@ -535,7 +535,8 @@ public final class SwingUtils {
     private static class ContainerMonitor implements AWTEventListener {
         private static final Field UI
                 = ReflectionUtils.getDeclaredField(JComponent.class, "ui");
-        private static final String METAL_THEME_KEY = "metalTheme";
+        private static final PropertyChangeListener TEXT_BACKGROUND_MONITOR
+                = new TextBackgroundMonitor();
 
         @Override
         public void eventDispatched(AWTEvent event) {
@@ -550,11 +551,16 @@ public final class SwingUtils {
                         c.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                     }
 
-                    // Fix the background color for text areas.
-                    // See BasicTextUI.updateBackground(JTextComponent).
+                    // Fix the background color for text components.
                     if (c instanceof JTextArea || c instanceof JEditorPane
                             || c instanceof JTextPane) {
-                        c.addPropertyChangeListener(new TextBackgroundMonitor());
+                        Boolean monitored = (Boolean) ((JComponent) c).getClientProperty(
+                                PropertyKey.TEXT_BACKGROUND_MONITORED);
+                        if (monitored == null) {
+                            c.addPropertyChangeListener(TEXT_BACKGROUND_MONITOR);
+                            ((JComponent) c).putClientProperty(
+                                    PropertyKey.TEXT_BACKGROUND_MONITORED, Boolean.TRUE);
+                        }
                     }
 
                     // Honor display properties for editor panes by default.
@@ -578,9 +584,9 @@ public final class SwingUtils {
                             jc.updateUI();
                         } else if (UIManager.getLookAndFeel().getName().equals("Metal")) {
                             MetalTheme mt = MetalLookAndFeel.getCurrentTheme();
-                            if (!jc.getClientProperty(METAL_THEME_KEY).equals(mt)) {
+                            if (!jc.getClientProperty(PropertyKey.METAL_THEME).equals(mt)) {
                                 jc.updateUI();
-                                jc.putClientProperty(METAL_THEME_KEY, mt);
+                                jc.putClientProperty(PropertyKey.METAL_THEME, mt);
                             }
                         }
                     }
@@ -751,14 +757,20 @@ public final class SwingUtils {
                 if (!tc.isBackgroundSet()
                         || tc.getBackground() instanceof UIResource) {
                     if (tc.isEnabled()) {
+                        String prefix = (String) ReflectionUtils.invoke(
+                                GET_PROPERTY_PREFIX, tc.getUI());
                         tc.setBackground(tc.isEditable()
-                                ? UIManager.getColor("TextArea.background")
-                                : UIManager.getColor("TextArea.inactiveBackground"));
+                                ? UIManager.getColor(prefix + ".background")
+                                : UIManager.getColor(prefix + ".inactiveBackground"));
                     } else if (tc instanceof JTextArea) {
                         tc.setBackground(UIManager.getColor("TextArea.disabledBackground"));
                     }
                 }
             }
         }
+    }
+
+    private static enum PropertyKey {
+        METAL_THEME, TEXT_BACKGROUND_MONITORED;
     }
 }
