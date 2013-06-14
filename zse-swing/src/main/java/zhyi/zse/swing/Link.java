@@ -39,11 +39,6 @@ import javax.swing.plaf.basic.BasicHTML;
  */
 @SuppressWarnings("serial")
 public class Link extends JButton {
-    public static final String URI_KEY = "uri";
-    public static final String NORMAL_STYLE_KEY = "normalStyle";
-    public static final String HOVERED_STYLE_KEY = "hoveredStyle";
-    public static final String VISITED_STYLE_KEY = "visitedStyle";
-
     private boolean visited;
     private String styledText;
 
@@ -96,9 +91,9 @@ public class Link extends JButton {
         super(text, icon);
 
         setUri(uri);
-        setNormalStyle("color: blue;");
-        setHoveredStyle("text-decoration: underline;");
-        setVisitedStyle("color: purple;");
+        setNormalStyle("color: blue");
+        setHoveredStyle("text-decoration: underline");
+        setVisitedStyle("color: purple");
 
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setContentAreaFilled(false);
@@ -127,17 +122,15 @@ public class Link extends JButton {
         addPropertyChangeListener(new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
-                switch (evt.getPropertyName()) {
-                    case NORMAL_STYLE_KEY:
-                    case HOVERED_STYLE_KEY:
-                    case VISITED_STYLE_KEY:
-                        revalidate();
-                        repaint();
-                        return;
-                    case "UI":
-                        styledText = null;
+                String name = evt.getPropertyName();
+                if (name.equals(PropertyKey.NORMAL_STYLE.name())
+                        || name.equals(PropertyKey.HOVERED_STYLE.name())
+                        || name.equals(PropertyKey.VISITED_STYLE.name())) {
+                    revalidate();
+                    repaint();
+                } else if (name.equals("UI")) {
+                    styledText = null;
                 }
-                styledText = null;
             }
         });
         getModel().addChangeListener(new ChangeListener() {
@@ -151,96 +144,80 @@ public class Link extends JButton {
 
     /**
      * Returns this link's target URI.
-     * <p>
-     * This property is the client property mapping by {@link #URI_KEY URI_KEY}.
      *
      * @return This link's target URI.
      */
     public URI getUri() {
-        return (URI) getClientProperty(URI_KEY);
+        return (URI) getClientProperty(PropertyKey.URI);
     }
 
     /**
      * Sets this link's target URI.
-     * <p>
-     * This property is the client property mapping by {@link #URI_KEY URI_KEY}.
      *
      * @param uri The new target URI for this link.
      */
     public void setUri(URI uri) {
-        putClientProperty(URI_KEY, uri);
+        putClientProperty(PropertyKey.URI, uri);
     }
 
     /**
      * Returns this link's normal style.
      * <p>
-     * This property is the client property mapping by {@link #NORMAL_STYLE_KEY
-     * NORMAL_STYLE_KEY}.
+     * This default value is "{@code color: blue}".
      *
      * @return This link's normal style.
      */
     public String getNormalStyle() {
-        return (String) getClientProperty(NORMAL_STYLE_KEY);
+        return (String) getClientProperty(PropertyKey.NORMAL_STYLE);
     }
 
     /**
      * Sets this link's normal style.
-     * <p>
-     * This property is the client property mapping by {@link #NORMAL_STYLE_KEY
-     * NORMAL_STYLE_KEY}.
      *
      * @param normalStyle The new normal style for this link.
      */
     public void setNormalStyle(String normalStyle) {
-        putClientProperty(NORMAL_STYLE_KEY, normalStyle);
+        putClientProperty(PropertyKey.NORMAL_STYLE, normalStyle);
     }
 
     /**
      * Returns this link's style when the mouse is hovered.
      * <p>
-     * This property is the client property mapping by {@link #HOVERED_STYLE_KEY
-     * HOVERED_STYLE_KEY}.
+     * This default value is "{@code text-decoration: underline}".
      *
      * @return This link's hovered style.
      */
     public String getHoveredStyle() {
-        return (String) getClientProperty(HOVERED_STYLE_KEY);
+        return (String) getClientProperty(PropertyKey.HOVERED_STYLE);
     }
 
     /**
      * Sets this link's style when the mouse is hovered.
-     * <p>
-     * This property is the client property mapping by {@link #VISITED_STYLE_KEY
-     * VISITED_STYLE_KEY}.
      *
      * @param hoveredStyle The new hovered style for this link.
      */
     public void setHoveredStyle(String hoveredStyle) {
-        putClientProperty(HOVERED_STYLE_KEY, hoveredStyle);
+        putClientProperty(PropertyKey.HOVERED_STYLE, hoveredStyle);
     }
 
     /**
      * Returns this link's style when it has already been visited.
      * <p>
-     * This property is the client property mapping by {@link #VISITED_STYLE_KEY
-     * VISITED_STYLE_KEY}.
+     * This default value is "{@code color: purple}".
      *
      * @return This link's visited style.
      */
     public String getVisitedStyle() {
-        return (String) getClientProperty(VISITED_STYLE_KEY);
+        return (String) getClientProperty(PropertyKey.VISITED_STYLE);
     }
 
     /**
      * Sets this link's style when it has already been visited.
-     * <p>
-     * This property is the client property mapping by {@link #VISITED_STYLE_KEY
-     * VISITED_STYLE_KEY}.
      *
      * @param visitedStyle The new visited style for this link.
      */
     public void setVisitedStyle(String visitedStyle) {
-        putClientProperty(VISITED_STYLE_KEY, visitedStyle);
+        putClientProperty(PropertyKey.VISITED_STYLE, visitedStyle);
     }
 
     @Override
@@ -250,21 +227,31 @@ public class Link extends JButton {
             text = "";
         }
 
-        String style = getNormalStyle();
-        if (model.isRollover()) {
-            style += getHoveredStyle();
-        }
-        if (visited) {
-            style += getVisitedStyle();
-        }
+        StringBuilder styleBuilder = new StringBuilder();
+        appendStyle(styleBuilder, getNormalStyle());
+        appendStyle(styleBuilder, getHoveredStyle());
+        appendStyle(styleBuilder, getVisitedStyle());
 
         String newStyledText = String.format(
-                "<html><div style=\"%s\">%s</div>", style, text);
+                "<html><div style=\"%s\">%s</div>", styleBuilder, text);
         if (!newStyledText.equals(styledText)) {
             styledText = newStyledText;
             BasicHTML.updateRenderer(this, styledText);
         } else {
             super.paintComponent(g);
         }
+    }
+
+    private void appendStyle(StringBuilder styleBuilder, String style) {
+        if (style != null && !style.isEmpty()) {
+            styleBuilder.append(style);
+            if (!style.endsWith(";")) {
+                styleBuilder.append(";");
+            }
+        }
+    }
+
+    private static enum PropertyKey {
+        URI, NORMAL_STYLE, HOVERED_STYLE, VISITED_STYLE;
     }
 }
