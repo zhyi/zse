@@ -39,6 +39,7 @@ public class ShadowBorder extends AbstractBorder {
 
     private int thickness;
     private int offset;
+    private Insets insets;
 
     /**
      * Constructs a new shadow border.
@@ -49,6 +50,7 @@ public class ShadowBorder extends AbstractBorder {
     public ShadowBorder(int thickness, int offset) {
         this.thickness = thickness;
         this.offset = offset;
+        insets = new Insets(0, 0, thickness, thickness);
     }
 
     @Override
@@ -90,7 +92,7 @@ public class ShadowBorder extends AbstractBorder {
 
     @Override
     public Insets getBorderInsets(Component c) {
-        return new Insets(0, 0, thickness, thickness);
+        return insets;
     }
 
     @Override
