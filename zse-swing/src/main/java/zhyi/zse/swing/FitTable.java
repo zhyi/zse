@@ -18,12 +18,12 @@ package zhyi.zse.swing;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Method;
@@ -46,6 +46,7 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+import javax.swing.text.JTextComponent;
 import javax.swing.text.View;
 import zhyi.zse.collection.CollectionUtils;
 import zhyi.zse.lang.ReflectionUtils;
@@ -59,7 +60,6 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  * <li>Column width can be resized to fit cells by double clicking header
  * separators.
  * <li>Columns can be filtered with the header's popup menu.
- * <li>Cell editor is removed on table change to prevent runtime exceptions.
  * <li>Row sorter and view port height filling are enabled by default.
  * </ul>
  *
@@ -71,7 +71,6 @@ public class FitTable extends JTable {
             = ReflectionUtils.getDeclaredMethod(
                     BasicTableHeaderUI.class, "getHeaderRenderer", int.class);
 
-    private Component activeRenderer;
     private MouseListener tableHeaderMouseListener;
     private MouseListener delegatedRowSortingListener;
     private PropertyChangeListener tableHeaderUiChangeListener;
@@ -94,10 +93,6 @@ public class FitTable extends JTable {
      */
     public FitTable(TableModel tableModel) {
         super(tableModel);
-        setAutoCreateRowSorter(true);
-        setFillsViewportHeight(true);
-        hiddenColumnMap = new IdentityHashMap<>();
-        addMouseMotionListener(new CellSelectionListener());
     }
 
     @Override
@@ -186,7 +181,7 @@ public class FitTable extends JTable {
     public Component prepareRenderer(
             TableCellRenderer renderer, int row, int column) {
         Component c = super.prepareRenderer(renderer, row, column);
-        resizeHtmlView(c, column);
+        fitHtmlView(c, column);
         return c;
     }
 
@@ -194,7 +189,7 @@ public class FitTable extends JTable {
     public Component prepareEditor(
             TableCellEditor editor, int row, int column) {
         Component c = super.prepareEditor(editor, row, column);
-        resizeHtmlView(c, column);
+        fitHtmlView(c, column);
         fitRowHeight(row);
         return c;
     }
@@ -202,16 +197,26 @@ public class FitTable extends JTable {
     @Override
     protected void initializeLocalVars() {
         super.initializeLocalVars();
+        setAutoCreateRowSorter(true);
+        setFillsViewportHeight(true);
+        hiddenColumnMap = new IdentityHashMap<>();
         initialized = true;
     }
 
-    private void resizeHtmlView(Component c, int column) {
+    private void fitHtmlView(Component c, int column) {
         if (c instanceof JComponent) {
-            View view = (View) ((JComponent) c)
-                    .getClientProperty(BasicHTML.propertyKey);
+            JComponent jc = (JComponent) c;
+            int width = columnModel.getColumn(convertColumnIndexToModel(column)).getWidth();
+            View view = (View) jc.getClientProperty(BasicHTML.propertyKey);
+            if (view == null && jc instanceof JTextComponent) {
+                view = ((JTextComponent) jc).getUI().getRootView((JTextComponent) jc);
+            }
             if (view != null) {
-                view.setSize(columnModel.getColumn(
-                        convertColumnIndexToModel(column)).getWidth(), 0);
+                Insets insets = jc.getInsets();
+                view.setSize(width - insets.left - insets.right, Float.MAX_VALUE);
+                jc.setPreferredSize(new Dimension(width,
+                        (int) Math.ceil(view.getPreferredSpan(View.Y_AXIS))
+                                + insets.top + insets.bottom));
             }
         }
     }
@@ -341,25 +346,6 @@ public class FitTable extends JTable {
             i++;
         }
         return index;
-    }
-
-    private class CellSelectionListener extends MouseMotionAdapter {
-        @Override
-        public void mouseMoved(MouseEvent e) {
-            Point p = e.getPoint();
-            int row = rowAtPoint(p);
-            int column = columnAtPoint(p);
-            if (activeRenderer != null) {
-                Rectangle rec = activeRenderer.getBounds();
-                if (!rec.contains(p)) {
-                    remove(activeRenderer);
-                    activeRenderer = null;
-                    repaint(rec);
-                }
-            } else {
-                
-            }
-        }
     }
 
     /**
