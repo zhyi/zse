@@ -131,6 +131,7 @@ public class FitTable extends JTable {
         if (isEditing()) {
             removeEditor();
         }
+        removeCellComponents();
         super.tableChanged(e);
         if (e.getFirstRow() == TableModelEvent.HEADER_ROW) {
             fitAllRowHeights();
@@ -154,18 +155,21 @@ public class FitTable extends JTable {
 
     @Override
     public void columnAdded(TableColumnModelEvent e) {
+        removeCellComponents();
         super.columnAdded(e);
         fitAllRowHeights();
     }
 
     @Override
     public void columnRemoved(TableColumnModelEvent e) {
+        removeCellComponents();
         super.columnRemoved(e);
         fitAllRowHeights();
     }
 
     @Override
     public void columnMarginChanged(ChangeEvent e) {
+        removeCellComponents();
         super.columnMarginChanged(e);
         fitAllRowHeights();
     }
@@ -200,6 +204,15 @@ public class FitTable extends JTable {
         fitHtmlView(c, column);
         fitRowHeight(row);
         return c;
+    }
+
+    @Override
+    public void updateUI() {
+        if (isEditing() && !cellEditor.stopCellEditing()) {
+            cellEditor.cancelCellEditing();
+        }
+        removeCellComponents();
+        super.updateUI();
     }
 
     @Override
@@ -367,6 +380,17 @@ public class FitTable extends JTable {
         return index;
     }
 
+    private void removeCellComponents() {
+        if (focusedCellComponent == activeCellComponent) {
+            removeCellComponent(activeCellComponent);
+        } else {
+            removeCellComponent(activeCellComponent);
+            removeCellComponent(focusedCellComponent);
+        }
+        activeCellComponent = null;
+        focusedCellComponent = null;
+    }
+
     private void removeCellComponent(Component c) {
         Rectangle r = c.getBounds();
         for (FocusListener l : c.getFocusListeners()) {
@@ -385,6 +409,7 @@ public class FitTable extends JTable {
             if (activeCellComponent != null
                     && activeCellComponent != focusedCellComponent) {
                 removeCellComponent(activeCellComponent);
+                activeCellComponent = null;
             }
 
             Point p = e.getPoint();
