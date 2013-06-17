@@ -21,9 +21,12 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionAdapter;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Method;
@@ -38,6 +41,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableModelEvent;
+import javax.swing.plaf.TableHeaderUI;
 import javax.swing.plaf.basic.BasicHTML;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI.MouseInputHandler;
@@ -61,6 +65,7 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  * separators.
  * <li>Columns can be filtered with the header's popup menu.
  * <li>Row sorter and view port height filling are enabled by default.
+ * <li>Real cell component support with {@link ActiveTableCellRenderer}.
  * </ul>
  *
  * @author Zhao Yi
@@ -71,8 +76,10 @@ public class FitTable extends JTable {
             = ReflectionUtils.getDeclaredMethod(
                     BasicTableHeaderUI.class, "getHeaderRenderer", int.class);
 
+    private Component activeCellComponent;
+    private Component focusedCellComponent;
     private MouseListener tableHeaderMouseListener;
-    private MouseListener delegatedRowSortingListener;
+    private MouseListener rowSortingListenerDelegator;
     private PropertyChangeListener tableHeaderUiChangeListener;
     private JPopupMenu columnSelectorPopupMenu;
     private MultiValueSelector<JCheckBoxMenuItem, TableColumn> columnSelector;
@@ -93,6 +100,7 @@ public class FitTable extends JTable {
      */
     public FitTable(TableModel tableModel) {
         super(tableModel);
+        addMouseMotionListener(new ActiveCellListener());
     }
 
     @Override
@@ -104,7 +112,7 @@ public class FitTable extends JTable {
 
         if (tableHeader != null) {
             tableHeader.removeMouseListener(tableHeaderMouseListener);
-            tableHeader.removeMouseListener(delegatedRowSortingListener);
+            tableHeader.removeMouseListener(rowSortingListenerDelegator);
             tableHeader.removePropertyChangeListener(
                     "UI", tableHeaderUiChangeListener);
         }
@@ -213,7 +221,7 @@ public class FitTable extends JTable {
             }
             if (view != null) {
                 Insets insets = jc.getInsets();
-                view.setSize(width - insets.left - insets.right, Float.MAX_VALUE);
+                view.setSize(width - insets.left - insets.right, 0);
                 jc.setPreferredSize(new Dimension(width,
                         (int) Math.ceil(view.getPreferredSpan(View.Y_AXIS))
                                 + insets.top + insets.bottom));
@@ -257,8 +265,19 @@ public class FitTable extends JTable {
         }
 
         if (tableHeader != null) {
-            Component c = (Component) ReflectionUtils.invoke(
-                    GET_HEADER_RENDERER, tableHeader.getUI(), column);
+            TableHeaderUI headerUi = tableHeader.getUI();
+            Component c;
+            if (headerUi instanceof BasicTableHeaderUI) {
+                c = (Component) ReflectionUtils.invoke(
+                        GET_HEADER_RENDERER, tableHeader.getUI(), column);
+            } else {
+                TableCellRenderer headerRenderer = tableColumn.getHeaderRenderer();
+                if (headerRenderer == null) {
+                    headerRenderer = tableHeader.getDefaultRenderer();
+                }
+                c = headerRenderer.getTableCellRendererComponent(this,
+                        tableColumn.getHeaderValue(), false, false, -1, column);
+            }
             width = Math.max(width, c.getPreferredSize().width);
         }
 
@@ -348,23 +367,73 @@ public class FitTable extends JTable {
         return index;
     }
 
+    private void removeCellComponent(Component c) {
+        Rectangle r = c.getBounds();
+        for (FocusListener l : c.getFocusListeners()) {
+            if (l instanceof CellComponentFocusListener) {
+                c.removeFocusListener(l);
+                break;
+            }
+        }
+        remove(c);
+        repaint(r);
+    }
+
+    private class ActiveCellListener extends MouseMotionAdapter {
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            if (activeCellComponent != null
+                    && activeCellComponent != focusedCellComponent) {
+                removeCellComponent(activeCellComponent);
+            }
+
+            Point p = e.getPoint();
+            int row = rowAtPoint(p);
+            int column = columnAtPoint(p);
+            if (row != -1 && column != -1) {
+                TableCellRenderer tcr = getCellRenderer(row, column);
+                if (tcr instanceof ActiveTableCellRenderer) {
+                    activeCellComponent = prepareRenderer(tcr, row, column);
+                    activeCellComponent.addFocusListener(
+                            new CellComponentFocusListener());
+                    add(activeCellComponent);
+                    activeCellComponent.setBounds(getCellRect(row, column, false));
+                }
+            }
+        }
+    }
+
+    private class CellComponentFocusListener implements FocusListener {
+        @Override
+        public void focusGained(FocusEvent e) {
+            focusedCellComponent = e.getComponent();
+        }
+
+        @Override
+        public void focusLost(FocusEvent e) {
+            if (activeCellComponent == focusedCellComponent) {
+                activeCellComponent = null;
+            }
+            removeCellComponent(focusedCellComponent);
+            focusedCellComponent = null;
+        }
+    }
+
     /**
      * This listener wraps the default mouse listener installed on the table
      * header to prevent row sorting if a header column separator is clicked.
      */
-    private class DelegatedRowSortingListener implements MouseListener {
+    private class RowSortingListenerDelegator implements MouseListener {
         private MouseListener headerListener;
 
-        private DelegatedRowSortingListener(MouseListener headerListener) {
+        private RowSortingListenerDelegator(MouseListener headerListener) {
             this.headerListener = headerListener;
         }
 
         @Override
         public void mouseClicked(MouseEvent e) {
-            if (e.getClickCount() == 1) {
-                if (getResizingColumn(e.getPoint()) == -1) {
-                    headerListener.mouseClicked(e);
-                }
+            if (e.getClickCount() == 1 && getResizingColumn(e.getPoint()) == -1) {
+                headerListener.mouseClicked(e);
             }
         }
 
@@ -418,7 +487,7 @@ public class FitTable extends JTable {
     private class TableHeaderUiChangeListener implements PropertyChangeListener {
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
-            tableHeader.removeMouseListener(delegatedRowSortingListener);
+            tableHeader.removeMouseListener(rowSortingListenerDelegator);
             MouseListener rowSortingListener = null;
             for (MouseListener l : tableHeader.getMouseListeners()) {
                 if (l instanceof MouseInputHandler) {
@@ -426,10 +495,12 @@ public class FitTable extends JTable {
                     break;
                 }
             }
-            tableHeader.removeMouseListener(rowSortingListener);
-            delegatedRowSortingListener
-                    = new DelegatedRowSortingListener(rowSortingListener);
-            tableHeader.addMouseListener(delegatedRowSortingListener);
+            if (rowSortingListener != null) {
+                tableHeader.removeMouseListener(rowSortingListener);
+                rowSortingListenerDelegator
+                        = new RowSortingListenerDelegator(rowSortingListener);
+                tableHeader.addMouseListener(rowSortingListenerDelegator);
+            }
         }
     }
 
