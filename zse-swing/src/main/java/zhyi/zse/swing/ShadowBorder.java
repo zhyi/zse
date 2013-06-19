@@ -30,6 +30,9 @@ import javax.swing.border.Border;
  * <p>
  * To get the best visual effect, it is recommended to make the background of
  * the owning component transparent.
+ * <p>
+ * If the look and feel is set with {@link SwingUtils#switchLookAndFeel}, all
+ * popup components have shadow borders by default.
  *
  * @author Zhao Yi
  */
