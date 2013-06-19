@@ -24,6 +24,7 @@ import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.RadialGradientPaint;
 import javax.swing.border.Border;
+import javax.swing.plaf.UIResource;
 
 /**
  * This border implements a drop shadow.
@@ -104,5 +105,20 @@ public class ShadowBorder implements Border {
     @Override
     public boolean isBorderOpaque() {
         return false;
+    }
+
+    /**
+     * A subclass of {@link ShadowBorder} that implements {@link UIResource}.
+     */
+    public static class ShadowBorderUIResource extends ShadowBorder implements UIResource {
+        /**
+         * Constructs a new shadow border.
+         *
+         * @param thickness The thickness of the shadow.
+         * @param offset The offset to the owning component.
+         */
+        public ShadowBorderUIResource(int thickness, int offset) {
+            super(thickness, offset);
+        }
     }
 }
