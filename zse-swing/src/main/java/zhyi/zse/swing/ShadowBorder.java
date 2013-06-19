@@ -23,7 +23,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.RadialGradientPaint;
-import javax.swing.border.AbstractBorder;
+import javax.swing.border.Border;
 
 /**
  * This border implements a drop shadow.
@@ -34,7 +34,7 @@ import javax.swing.border.AbstractBorder;
  * @author Zhao Yi
  */
 @SuppressWarnings("serial")
-public class ShadowBorder extends AbstractBorder {
+public class ShadowBorder implements Border {
     private static final Color DARK = new Color(0, 0, 0, 80);
     private static final Color BRIGHT = new Color(0, 0, 0, 2);
     private static final float[] RADIAL_FRACTIONS = {0.0F, 1.0F};
@@ -99,11 +99,7 @@ public class ShadowBorder extends AbstractBorder {
     }
 
     @Override
-    public Insets getBorderInsets(Component c, Insets insets) {
-        insets.top = 0;
-        insets.left = 0;
-        insets.bottom = thickness;
-        insets.right = thickness;
-        return insets;
+    public boolean isBorderOpaque() {
+        return false;
     }
 }
