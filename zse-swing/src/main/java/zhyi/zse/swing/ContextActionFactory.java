@@ -57,7 +57,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createUndoAction(final JComponent c) {
-        return createAction(c, "undo", "ctrl Z");
+        return createAction(c, ActionKey.undo, "ctrl Z");
     }
 
     /**
@@ -69,7 +69,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createRedoAction(final JComponent c) {
-        return createAction(c, "redo", "ctrl Y");
+        return createAction(c, ActionKey.redo, "ctrl Y");
     }
 
     /**
@@ -81,7 +81,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createCutAction(final JComponent c) {
-        return createAction(c, "cut", "ctrl X");
+        return createAction(c, ActionKey.cut, "ctrl X");
     }
 
     /**
@@ -93,7 +93,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createCopyAction(final JComponent c) {
-        return createAction(c, "copy", "ctrl C");
+        return createAction(c, ActionKey.copy, "ctrl C");
     }
 
     /**
@@ -105,7 +105,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createPasteAction(final JComponent c) {
-        return createAction(c, "paste", "ctrl V");
+        return createAction(c, ActionKey.paste, "ctrl V");
     }
 
     /**
@@ -117,7 +117,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createDeleteAction(final JComponent c) {
-        return createAction(c, "delete", "DELETE");
+        return createAction(c, ActionKey.delete, "DELETE");
     }
 
     /**
@@ -129,7 +129,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createSelectAllAction(final JComponent c) {
-        return createAction(c, "selectAll", "ctrl A");
+        return createAction(c, ActionKey.selectAll, "ctrl A");
     }
 
     /**
@@ -141,7 +141,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createCutAllAction(final JComponent c) {
-        return createAction(c, "cutAll", "ctrl shift X");
+        return createAction(c, ActionKey.cutAll, "ctrl shift X");
     }
 
     /**
@@ -153,7 +153,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createCopyAllAction(final JComponent c) {
-        return createAction(c, "copyAll", "ctrl shift C");
+        return createAction(c, ActionKey.copyAll, "ctrl shift C");
     }
 
     /**
@@ -165,7 +165,7 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createReplaceAllAction(final JComponent c) {
-        return createAction(c, "replaceAll", "ctrl shift V");
+        return createAction(c, ActionKey.replaceAll, "ctrl shift V");
     }
 
     /**
@@ -177,12 +177,13 @@ public class ContextActionFactory {
      * @return The created action object.
      */
     public static Action createDeleteAllAction(final JComponent c) {
-        return createAction(c, "deleteAll", "ctrl DELETE");
+        return createAction(c, ActionKey.deleteAll, "ctrl DELETE");
     }
 
     @SuppressWarnings("serial")
     private static Action createAction(
-            final JComponent c, final String name, String ks) {
+            final JComponent c, final ActionKey key, String ks) {
+        final String name = key.name();
         Action a = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -199,8 +200,13 @@ public class ContextActionFactory {
         a.putValue(Action.ACTION_COMMAND_KEY, name);
         KeyStroke ak = KeyStroke.getKeyStroke(ks);
         a.putValue(Action.ACCELERATOR_KEY, ak);
-        c.getInputMap(JComponent.WHEN_FOCUSED).put(ak, name);
-        c.getActionMap().put(name, a);
+        c.getInputMap(JComponent.WHEN_FOCUSED).put(ak, key);
+        c.getActionMap().put(key, a);
         return a;
+    }
+
+    private static enum ActionKey {
+        undo, redo, cut, copy, paste, delete,
+        selectAll, cutAll, copyAll, replaceAll, deleteAll;
     }
 }
