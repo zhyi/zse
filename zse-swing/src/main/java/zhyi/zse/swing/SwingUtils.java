@@ -40,7 +40,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
-import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
@@ -62,6 +61,7 @@ import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
+import javax.swing.plaf.BorderUIResource.EmptyBorderUIResource;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicHTML;
 import javax.swing.plaf.basic.BasicTextUI;
@@ -369,14 +369,14 @@ public final class SwingUtils {
                 UIManager.getLookAndFeel().getLayoutStyle()));
 
         // Fix specific L&F issues.
-        UIDefaults uid = UIManager.getLookAndFeelDefaults();
+        UIDefaults uid = UIManager.getDefaults();
         switch (UIManager.getLookAndFeel().getName()) {
             case "Windows":
                 if (Double.parseDouble(System.getProperty("os.version")) >= 6.0
                         && Boolean.TRUE.equals(Toolkit.getDefaultToolkit()
                                 .getDesktopProperty("win.xpstyle.themeActive"))) {
-                    uid.put("ComboBox.border", BorderFactory.createEmptyBorder(1, 2, 1, 1));
-                    uid.put("Menu.border", BorderFactory.createEmptyBorder(0, 3, 0, 3));
+                    uid.put("ComboBox.border", new EmptyBorderUIResource(1, 2, 1, 1));
+                    uid.put("Menu.border", new EmptyBorderUIResource(0, 3, 0, 3));
                     uid.put("TextArea.inactiveBackground",
                             UIManager.get("TextArea.disabledBackground"));
                     uid.put("EditorPane.inactiveBackground",
@@ -558,6 +558,8 @@ public final class SwingUtils {
                                 PropertyKey.TEXT_BACKGROUND_MONITORED);
                         if (monitored == null) {
                             c.addPropertyChangeListener(TEXT_BACKGROUND_MONITOR);
+                            TEXT_BACKGROUND_MONITOR.propertyChange(
+                                    new PropertyChangeEvent(c, "enabled", null, null));
                             ((JComponent) c).putClientProperty(
                                     PropertyKey.TEXT_BACKGROUND_MONITORED, Boolean.TRUE);
                         }
