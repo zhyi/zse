@@ -27,6 +27,9 @@ import javax.swing.border.AbstractBorder;
 
 /**
  * This border implements a drop shadow.
+ * <p>
+ * To get the best visual effect, it is recommended to make the background of
+ * the owning component transparent.
  *
  * @author Zhao Yi
  */
