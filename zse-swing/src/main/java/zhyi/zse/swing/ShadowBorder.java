@@ -110,7 +110,8 @@ public class ShadowBorder implements Border {
     /**
      * A subclass of {@link ShadowBorder} that implements {@link UIResource}.
      */
-    public static class ShadowBorderUIResource extends ShadowBorder implements UIResource {
+    public static class ShadowBorderUIResource
+            extends ShadowBorder implements UIResource {
         /**
          * Constructs a new shadow border.
          *
