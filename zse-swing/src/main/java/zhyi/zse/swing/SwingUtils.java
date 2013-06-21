@@ -22,11 +22,17 @@ import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Cursor;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.RadialGradientPaint;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.AWTEventListener;
+import java.awt.event.ComponentEvent;
 import java.awt.event.ContainerEvent;
+import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
@@ -40,15 +46,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
+import javax.swing.FocusManager;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
+import javax.swing.JTree;
 import javax.swing.JViewport;
 import javax.swing.LayoutStyle;
 import javax.swing.LayoutStyle.ComponentPlacement;
@@ -81,16 +92,18 @@ import zhyi.zse.lang.ReflectionUtils;
  */
 public final class SwingUtils {
     private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
-    private static final AWTEventListener CONTAINER_MONITOR = new ContainerMonitor();
+    private static final AWTEventListener CONTAINER_HANDLER = new ContainerHandler();
+    private static final AWTEventListener AERO_BORDER_HANDLER = new AeroBorderHandler();
     private static final PopupFactory SHADOW_POPUP_FACTORY = new ShadowPopupFactory();
-    private static final AWTEventListener TEXT_COMPONENT_POPUP_MONITOR
-            = new TextComponentPopupMonitor();
+    private static final AWTEventListener TEXT_COMPONENT_POPUP_HANDLER
+            = new TextComponentPopupHandler();
     private static final Method GET_PROPERTY_PREFIX
             = ReflectionUtils.getDeclaredMethod(BasicTextUI.class, "getPropertyPrefix");
 
-    private static boolean containersMonitored;
+    private static boolean containerMonitored;
     private static boolean lafMonitored;
     private static boolean localeMonitored;
+    private static boolean aeroBorderMonitored;
     private static boolean shadowPopupEnabled;
     private static boolean defaultTextPopupEnabled;
 
@@ -318,7 +331,10 @@ public final class SwingUtils {
      * </ul>
      * <b>Fixes for Windows Aero Look And Feel Issues</b>
      * <ul>
-     * <li>Combo boxes have extra borders and are insufficiently padded.
+     * <li>Text components, editable combo boxes, spinners and scroll panes have
+     * wrong borders.
+     * <li>Read-only combo boxes have extra borders and are insufficiently
+     * padded.
      * <li>Menu bar menus are insufficiently padded.
      * <li>Some read-only or disabled text components have wrong default
      * background colors.
@@ -351,6 +367,8 @@ public final class SwingUtils {
     }
 
     private static void fixUiIssues() {
+        Toolkit tk = Toolkit.getDefaultToolkit();
+
         // Add shadow for popup components.
         if (!shadowPopupEnabled) {
             PopupFactory.setSharedInstance(SHADOW_POPUP_FACTORY);
@@ -359,8 +377,8 @@ public final class SwingUtils {
 
         // Add default popup menus for text components.
         if (!defaultTextPopupEnabled) {
-            Toolkit.getDefaultToolkit().addAWTEventListener(
-                    TEXT_COMPONENT_POPUP_MONITOR, AWTEvent.MOUSE_EVENT_MASK);
+            tk.addAWTEventListener(
+                    TEXT_COMPONENT_POPUP_HANDLER, AWTEvent.MOUSE_EVENT_MASK);
             defaultTextPopupEnabled = true;
         }
 
@@ -370,22 +388,30 @@ public final class SwingUtils {
 
         // Fix specific L&F issues.
         UIDefaults uid = UIManager.getDefaults();
-        switch (UIManager.getLookAndFeel().getName()) {
-            case "Windows":
-                if (Double.parseDouble(System.getProperty("os.version")) >= 6.0
-                        && Boolean.TRUE.equals(Toolkit.getDefaultToolkit()
-                                .getDesktopProperty("win.xpstyle.themeActive"))) {
-                    uid.put("ComboBox.border", new EmptyBorderUIResource(1, 2, 1, 1));
-                    uid.put("Menu.border", new EmptyBorderUIResource(0, 3, 0, 3));
-                    uid.put("TextArea.inactiveBackground",
-                            UIManager.get("TextArea.disabledBackground"));
-                    uid.put("EditorPane.inactiveBackground",
-                            UIManager.get("EditorPane.disabledBackground"));
-                    uid.put("TextPane.inactiveBackground",
-                            UIManager.get("TextPane.disabledBackground"));
-                }
-                break;
-            case "Nimbus":
+        String laf = UIManager.getLookAndFeel().getName();
+        if (laf.equals("Windows")
+                && Double.parseDouble(System.getProperty("os.version")) >= 6.0
+                && Boolean.TRUE.equals(tk.getDesktopProperty("win.xpstyle.themeActive"))) {
+            uid.put("TextField.border", new AeroBorder(3, 5, 3, 5));
+            uid.put("PasswordField.border", new AeroBorder(3, 5, 3, 5));
+            uid.put("ComboBox.border", new AeroBorder(1, 3, 1, 1));
+            uid.put("Spinner.border", new AeroBorder(3, 3, 3, 3));
+            uid.put("ScrollPane.border", new AeroBorder(2, 2, 2, 2));
+            uid.put("Menu.border", new EmptyBorderUIResource(0, 3, 0, 3));
+            uid.put("TextArea.inactiveBackground",
+                    UIManager.get("TextArea.disabledBackground"));
+            uid.put("EditorPane.inactiveBackground",
+                    UIManager.get("EditorPane.disabledBackground"));
+            uid.put("TextPane.inactiveBackground",
+                    UIManager.get("TextPane.disabledBackground"));
+
+            if (!aeroBorderMonitored) {
+                tk.addAWTEventListener(AERO_BORDER_HANDLER,
+                        AWTEvent.FOCUS_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
+                aeroBorderMonitored = true;
+            }
+        } else {
+            if (laf.equals("Nimbus")) {
                 uid.put("TextField[Enabled].backgroundPainter",
                         new NimbusTextBackgroundPainter((AbstractRegionPainter)
                                 UIManager.get("TextField[Enabled].backgroundPainter")));
@@ -408,6 +434,12 @@ public final class SwingUtils {
                 uid.put("TextPane[Enabled].backgroundPainter",
                         new NimbusTextBackgroundPainter((AbstractRegionPainter)
                                 UIManager.get("TextPane[Enabled].backgroundPainter")));
+            }
+
+            if (aeroBorderMonitored) {
+                tk.removeAWTEventListener(AERO_BORDER_HANDLER);
+                aeroBorderMonitored = false;
+            }
         }
     }
 
@@ -451,10 +483,10 @@ public final class SwingUtils {
     }
 
     private static void monitorContainers() {
-        if (!containersMonitored) {
+        if (!containerMonitored) {
             Toolkit.getDefaultToolkit().addAWTEventListener(
-                    CONTAINER_MONITOR, AWTEvent.CONTAINER_EVENT_MASK);
-            containersMonitored = true;
+                    CONTAINER_HANDLER, AWTEvent.CONTAINER_EVENT_MASK);
+            containerMonitored = true;
         }
     }
 
@@ -532,11 +564,11 @@ public final class SwingUtils {
         }
     }
 
-    private static class ContainerMonitor implements AWTEventListener {
+    private static class ContainerHandler implements AWTEventListener {
         private static final Field UI
                 = ReflectionUtils.getDeclaredField(JComponent.class, "ui");
         private static final PropertyChangeListener TEXT_BACKGROUND_MONITOR
-                = new TextBackgroundMonitor();
+                = new TextBackgroundHandler();
 
         @Override
         public void eventDispatched(AWTEvent event) {
@@ -551,7 +583,7 @@ public final class SwingUtils {
                         c.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                     }
 
-                    // Fix the background color for text components.
+                    // Fix the background colors of text components.
                     if (c instanceof JTextArea || c instanceof JEditorPane
                             || c instanceof JTextPane) {
                         Boolean monitored = (Boolean) ((JComponent) c).getClientProperty(
@@ -609,7 +641,197 @@ public final class SwingUtils {
         }
     }
 
-    private static final class ShadowPopupFactory extends PopupFactory {
+    private static class AeroBorderHandler implements AWTEventListener {
+        @Override
+        public void eventDispatched(AWTEvent event) {
+            if (event instanceof ComponentEvent) {
+                switch (event.getID()) {
+                    case FocusEvent.FOCUS_GAINED:
+                    case FocusEvent.FOCUS_LOST:
+                    case MouseEvent.MOUSE_ENTERED:
+                    case MouseEvent.MOUSE_EXITED:
+                        mayRepaintAeroBorder(
+                                ((ComponentEvent) event).getComponent());
+                }
+            }
+        }
+
+        private void mayRepaintAeroBorder(Component c) {
+            while (c != null) {
+                if (c instanceof JComponent) {
+                    JComponent jc = (JComponent) c;
+                    if (jc.getBorder() instanceof AeroBorder) {
+                        if (AeroBorder.updateState(jc)) {
+                            jc.repaint();
+                        }
+                        return;
+                    }
+                }
+                c = c.getParent();
+            }
+        }
+    }
+
+    private static class AeroBorder implements Border, UIResource {
+        // Color0    Color1    Color2    Color1    Color0
+        // Color3    Color4              Color4    Color3
+        // Color3                                  Color3
+        // Color3    Color4              Color4    Color3
+        // Color5    Color6    Color6    Color6    Color5
+        private static final Color[] HILIGHTED_COLORS = {
+                new Color(150, 191, 194), new Color(92, 147, 188),
+                new Color(61, 123, 173), new Color(198, 222, 238),
+                new Color(181, 207, 231), new Color(195, 223, 216),
+                new Color(183, 217, 237)};
+        private static final Color[] NORMAL_COLORS = {
+                new Color(191, 210, 196), new Color(187, 189, 194),
+                new Color(171, 173, 179), new Color(226, 227, 234),
+                new Color(233, 236, 240), new Color(212, 230, 217),
+                new Color(227, 233, 239)};
+        private static final Color[] DISABLED_COLORS = {
+                new Color(183, 204, 185), new Color(175, 175, 175),
+                new Color(175, 175, 175), new Color(175, 175, 175),
+                new Color(227, 227, 227), new Color(183, 204, 185),
+                new Color(175, 175, 175)};
+        private Insets insets;
+
+        private AeroBorder(int top, int left, int bottom, int right) {
+            insets = new Insets(top, left, bottom, right);
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g,
+                int x, int y, int width, int height) {
+            if (!(c instanceof JComponent)) {
+                return;
+            }
+
+            JComponent jc = (JComponent) c;
+            AeroBorderState state;
+            state = (AeroBorderState) jc.getClientProperty(
+                    PropertyKey.AERO_BORDER_STATE);
+            if (state == null) {
+                updateState((JComponent) c);
+                state = (AeroBorderState) jc.getClientProperty(
+                        PropertyKey.AERO_BORDER_STATE);
+            }
+
+            int w = width - 1;
+            int h = height - 1;
+            switch (state) {
+                case NORMAL:
+                    paintBorder(g, NORMAL_COLORS, x, y, w, h);
+                    return;
+                case HIGHLIGHTED:
+                    paintBorder(g, HILIGHTED_COLORS, x, y, w, h);
+                    return;
+                case DISABLED:
+                    paintBorder(g, DISABLED_COLORS, x, y, w, h);
+            }
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return insets;
+        }
+
+        @Override
+        public boolean isBorderOpaque() {
+            return false;
+        }
+
+        private void paintBorder(Graphics g, Color[] colors,
+                int x, int y, int w, int h) {
+            g.setColor(colors[0]);
+            g.drawLine(x, y, x, y);
+            g.drawLine(x + w, y, x + w, y);
+
+            g.setColor(colors[1]);
+            g.drawLine(x + 1, y, x + 1, y);
+            g.drawLine(x + w - 1, y, x + w - 1, y);
+
+            g.setColor(colors[2]);
+            g.drawLine(x + 2, y, x + w - 2, y);
+
+            g.setColor(colors[3]);
+            g.drawLine(x, y + 1, x, y + h - 1);
+            g.drawLine(x + w, y + 1, x + w, y + h - 1);
+
+            g.setColor(colors[4]);
+            g.drawLine(x + 1, y + 1, x + 1, y + 1);
+            g.drawLine(x + w - 1, y + 1, x + w - 1, y + 1);
+            g.drawLine(x + 1, y + h - 1, x + 1, y + h - 1);
+            g.drawLine(x + w - 1, y + h - 1, x + w - 1, y + h - 1);
+
+            g.setColor(colors[5]);
+            g.drawLine(x, y + h, x, y + h);
+            g.drawLine(x + w, y + h, x + w, y + h);
+
+            g.setColor(colors[6]);
+            g.drawLine(x + 1, y + h, x + w - 1, y + h);
+        }
+
+        private static boolean updateState(JComponent c) {
+            JComponent editor = c;
+            if (c instanceof JScrollPane) {
+                Component view = ((JScrollPane) c).getViewport().getView();
+                if (view instanceof JComponent) {
+                    editor = (JComponent) view;
+                }
+            }
+
+            AeroBorderState state = null;
+            boolean enabled = editor.isEnabled();
+            boolean editable = false;
+            if (editor instanceof JTextComponent) {
+                editable = ((JTextComponent) editor).isEditable();
+            } else if (editor instanceof JComboBox) {
+                editable = ((JComboBox<?>) editor).isEditable();
+                if (!editable) {
+                    state = AeroBorderState.NONE;
+                }
+            } else if (editor instanceof JSpinner
+                    || editor instanceof JList || editor instanceof JTree) {
+                editable = enabled;
+            } else if (editor instanceof JTree) {
+                state = AeroBorderState.NONE;
+            } else if (Boolean.TRUE.equals(editor.getClientProperty("editable"))) {
+                editable = true;
+            }
+
+            if (state == null) {
+                if (enabled) {
+                    boolean focused = false;
+                    Component fo = FocusManager.getCurrentManager().getFocusOwner();
+                    if (fo != null && SwingUtilities.isDescendingFrom(fo, c)) {
+                        focused = true;
+                    }
+                    if (editable && (focused || c.getMousePosition() != null)) {
+                        // JSpinner.getMousePosition may strangely return
+                        // a non-null value even if the mouse is outside of its
+                        // bounds. There seems to be no way to fix this issue...
+                        state = AeroBorderState.HIGHLIGHTED;
+                    } else {
+                        state = AeroBorderState.NORMAL;
+                    }
+                } else {
+                    state = AeroBorderState.DISABLED;
+                }
+            }
+
+            if (state != c.getClientProperty(PropertyKey.AERO_BORDER_STATE)) {
+                c.putClientProperty(PropertyKey.AERO_BORDER_STATE, state);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private static enum AeroBorderState {
+        NORMAL, HIGHLIGHTED, DISABLED, NONE;
+    }
+
+    private static class ShadowPopupFactory extends PopupFactory {
         private static final Border POPUP_SHADOW_BORDER = new ShadowBorder(4, 4);
 
         @Override
@@ -635,7 +857,71 @@ public final class SwingUtils {
         }
     }
 
-    private static final class TextComponentPopupMonitor implements AWTEventListener {
+    private static class ShadowBorder implements Border, UIResource {
+        private static final Color DARK = new Color(0, 0, 0, 80);
+        private static final Color BRIGHT = new Color(0, 0, 0, 2);
+        private static final float[] RADIAL_FRACTIONS = {0.0F, 1.0F};
+        private static final Color[] RADIAL_COLORS = {DARK.brighter(), BRIGHT.brighter()};
+
+        private int thickness;
+        private int offset;
+        private Insets insets;
+
+        private ShadowBorder(int thickness, int offset) {
+            this.thickness = thickness;
+            this.offset = offset;
+            insets = new Insets(0, 0, thickness, thickness);
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g,
+                int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) g;
+
+            // Paint the upper right corner.
+            int ox = width - thickness;
+            int oy = offset;
+            g2.setPaint(new RadialGradientPaint(ox, oy + thickness, thickness,
+                    RADIAL_FRACTIONS, RADIAL_COLORS));
+            g2.fillRect(ox, oy, thickness, thickness);
+
+            // Paint the right side.
+            oy = offset + thickness;
+            g2.setPaint(new GradientPaint(
+                    ox, oy, DARK, ox + thickness, oy, BRIGHT));
+            g2.fillRect(ox, oy, thickness, height - offset - 2 * thickness);
+
+            // Paint the lower right corner.
+            oy = height - thickness;
+            g2.setPaint(new RadialGradientPaint(ox, oy, thickness,
+                    RADIAL_FRACTIONS, RADIAL_COLORS));
+            g2.fillRect(ox, oy, thickness, thickness);
+
+            // Paint the bottom side.
+            ox = offset + thickness;
+            g2.setPaint(new GradientPaint(
+                    ox, oy, DARK, ox, oy + thickness, BRIGHT));
+            g2.fillRect(ox, oy, width - offset - 2 * thickness, thickness);
+
+            // Lowerleft
+            ox = offset;
+            g2.setPaint(new RadialGradientPaint(ox + thickness, oy, thickness,
+                    RADIAL_FRACTIONS, RADIAL_COLORS));
+            g2.fillRect(ox, oy, thickness, thickness);
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return insets;
+        }
+
+        @Override
+        public boolean isBorderOpaque() {
+            return false;
+        }
+    }
+
+    private static class TextComponentPopupHandler implements AWTEventListener {
         private static final JPopupMenu TEXT_POPUP_MENU = new JPopupMenu();
         private static final Map<JTextComponent, Action[]>
                 TEXT_POPUP_ACTION_MAP = new WeakHashMap<>();
@@ -750,7 +1036,7 @@ public final class SwingUtils {
         }
     }
 
-    private static class TextBackgroundMonitor implements PropertyChangeListener {
+    private static class TextBackgroundHandler implements PropertyChangeListener {
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
             String name = evt.getPropertyName();
@@ -773,6 +1059,6 @@ public final class SwingUtils {
     }
 
     private static enum PropertyKey {
-        METAL_THEME, TEXT_BACKGROUND_MONITORED;
+        METAL_THEME, TEXT_BACKGROUND_MONITORED, AERO_BORDER_STATE;
     }
 }
