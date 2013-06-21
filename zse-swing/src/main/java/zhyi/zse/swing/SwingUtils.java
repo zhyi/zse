@@ -443,6 +443,17 @@ public final class SwingUtils {
         }
     }
 
+    /**
+     * Changes the locale at runtime.
+     * <p>
+     * The change takes immediate effect. After invoking this method, the default
+     * locales of JVM, {@link JComponent}, UI defaults and all created components
+     * are set to the specified one. The orientations of all created components
+     * are also changed accordingly. This method can work together with "locale"
+     * property change listeners to implement switching the UI language at runtime.
+     *
+     * @param locale The new locale to be applied.
+     */
     public static void switchLocale(Locale locale) {
         Locale.setDefault(locale);
         JComponent.setDefaultLocale(locale);
