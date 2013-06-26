@@ -22,11 +22,8 @@ import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.GradientPaint;
-import java.awt.Graphics;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.RadialGradientPaint;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.AWTEventListener;
@@ -46,20 +43,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
-import javax.swing.FocusManager;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
-import javax.swing.JTree;
+import javax.swing.JToolTip;
 import javax.swing.JViewport;
 import javax.swing.LayoutStyle;
 import javax.swing.LayoutStyle.ComponentPlacement;
@@ -71,7 +65,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.border.Border;
 import javax.swing.plaf.BorderUIResource.EmptyBorderUIResource;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicHTML;
@@ -84,6 +77,11 @@ import javax.swing.text.JTextComponent;
 import javax.swing.undo.UndoManager;
 import zhyi.zse.lang.ExceptionUtils;
 import zhyi.zse.lang.ReflectionUtils;
+import zhyi.zse.swing.AeroEditorBorder.AeroEditorBorderUIResource;
+import zhyi.zse.swing.AeroToolTipBorder.AeroToolTipBorderUIResource;
+import zhyi.zse.swing.plaf.AeroComboBoxUI;
+import zhyi.zse.swing.plaf.AeroScrollPaneBorder;
+import zhyi.zse.swing.plaf.AeroToolTipUI;
 
 /**
  * Utility methods for Swing.
@@ -93,7 +91,8 @@ import zhyi.zse.lang.ReflectionUtils;
 public final class SwingUtils {
     private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
     private static final AWTEventListener CONTAINER_HANDLER = new ContainerHandler();
-    private static final AWTEventListener AERO_BORDER_HANDLER = new AeroBorderHandler();
+    private static final AWTEventListener AERO_EDITOR_BORDER_HANDLER
+            = new AeroEditorBorderHandler();
     private static final PopupFactory SHADOW_POPUP_FACTORY = new ShadowPopupFactory();
     private static final AWTEventListener TEXT_COMPONENT_POPUP_HANDLER
             = new TextComponentPopupHandler();
@@ -227,7 +226,7 @@ public final class SwingUtils {
      * Sets the text for a label, with the mnemonic character analyzed.
      * <p>
      * The mnemonic character is defined as the first character that is surrounded
-     * with dashes ({@code _}) in the text. If no mnemonic character is found,
+     * by dashes ({@code _}) in the text. If no mnemonic character is found,
      * the text is set to the label directly.
      *
      * @param label The label.
@@ -248,7 +247,7 @@ public final class SwingUtils {
      * Sets the text for a button, with the mnemonic character analyzed.
      * <p>
      * The mnemonic character is defined as the first character that is surrounded
-     * with dashes ({@code _}) in the text. If no mnemonic character is found,
+     * by dashes ({@code _}) in the text. If no mnemonic character is found,
      * the text is set to the button directly.
      *
      * @param button The button.
@@ -328,6 +327,7 @@ public final class SwingUtils {
      * <li>The distance of indent in group layout is too small.
      * <li>Drop shadows are missing for popup components.
      * <li>Read-only text components have wrong cursors.
+     * <li>Display properties are not honored by editor panes.
      * </ul>
      * <b>Fixes for Windows Aero Look And Feel Issues</b>
      * <ul>
@@ -338,7 +338,8 @@ public final class SwingUtils {
      * <li>Menu bar menus are insufficiently padded.
      * <li>Some read-only or disabled text components have wrong default
      * background colors.
-     * <li>Display properties are not honored by editor pane.
+     * <li>Text components, editable combo boxes and spinners have wrong borders.
+     * <li>Tool tips have wrong UIs.
      * </ul>
      * <b>Fixes for Nimbus Look And Feel Issues</b>
      * <ul>
@@ -382,9 +383,8 @@ public final class SwingUtils {
             defaultTextPopupEnabled = true;
         }
 
-        // Double the group layout's indent distance.
-        LayoutStyle.setInstance(new GroupLayoutStyle(
-                UIManager.getLookAndFeel().getLayoutStyle()));
+        // Enlarge the group layout's indent distance.
+        LayoutStyle.setInstance(new GroupLayoutStyle());
 
         // Fix specific L&F issues.
         UIDefaults uid = UIManager.getDefaults();
@@ -392,11 +392,15 @@ public final class SwingUtils {
         if (laf.equals("Windows")
                 && Double.parseDouble(System.getProperty("os.version")) >= 6.0
                 && Boolean.TRUE.equals(tk.getDesktopProperty("win.xpstyle.themeActive"))) {
-            uid.put("TextField.border", new AeroBorder(3, 5, 3, 5));
-            uid.put("PasswordField.border", new AeroBorder(3, 5, 3, 5));
-            uid.put("ComboBox.border", new AeroBorder(1, 3, 1, 1));
-            uid.put("Spinner.border", new AeroBorder(3, 3, 3, 3));
-            uid.put("ScrollPane.border", new AeroBorder(2, 2, 2, 2));
+            uid.put("ToolTipUI", AeroToolTipUI.class.getName());
+            uid.put("ComboBoxUI", AeroComboBoxUI.class.getName());
+            uid.put("TextField.border", new AeroEditorBorderUIResource(3, 5, 3, 5));
+            uid.put("PasswordField.border", new AeroEditorBorderUIResource(3, 5, 3, 5));
+            uid.put("ComboBox.border", new AeroEditorBorderUIResource(1, 3, 1, 1));
+            uid.put("Spinner.border", new AeroEditorBorderUIResource(3, 3, 3, 3));
+            uid.put("ScrollPane.border",
+                    new AeroScrollPaneBorder(uid.getBorder("ScrollPane.border")));
+            uid.put("ToolTip.border", new AeroToolTipBorderUIResource());
             uid.put("Menu.border", new EmptyBorderUIResource(0, 3, 0, 3));
             uid.put("TextArea.inactiveBackground",
                     UIManager.get("TextArea.disabledBackground"));
@@ -406,8 +410,8 @@ public final class SwingUtils {
                     UIManager.get("TextPane.disabledBackground"));
 
             if (!aeroBorderMonitored) {
-                tk.addAWTEventListener(AERO_BORDER_HANDLER,
-                        AWTEvent.FOCUS_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
+                tk.addAWTEventListener(AERO_EDITOR_BORDER_HANDLER,
+                        AWTEvent.FOCUS_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK);
                 aeroBorderMonitored = true;
             }
         } else {
@@ -437,7 +441,7 @@ public final class SwingUtils {
             }
 
             if (aeroBorderMonitored) {
-                tk.removeAWTEventListener(AERO_BORDER_HANDLER);
+                tk.removeAWTEventListener(AERO_EDITOR_BORDER_HANDLER);
                 aeroBorderMonitored = false;
             }
         }
@@ -652,198 +656,56 @@ public final class SwingUtils {
         }
     }
 
-    private static class AeroBorderHandler implements AWTEventListener {
+    
+
+    private static class AeroEditorBorderHandler implements AWTEventListener {
+        private JComponent activeAeroEditor;
+
         @Override
         public void eventDispatched(AWTEvent event) {
             if (event instanceof ComponentEvent) {
+                ComponentEvent ce = (ComponentEvent) event;
+                Component c = ce.getComponent();
+
+                JComponent aeroEditor = null;
+                while (c != null) {
+                    if (c instanceof JComponent
+                            && ((JComponent) c).getBorder() instanceof AeroEditorBorder) {
+                        aeroEditor = (JComponent) c;
+                        break;
+                    }
+                    c = c.getParent();
+                }
+
                 switch (event.getID()) {
                     case FocusEvent.FOCUS_GAINED:
                     case FocusEvent.FOCUS_LOST:
-                    case MouseEvent.MOUSE_ENTERED:
-                    case MouseEvent.MOUSE_EXITED:
-                        mayRepaintAeroBorder(
-                                ((ComponentEvent) event).getComponent());
-                }
-            }
-        }
-
-        private void mayRepaintAeroBorder(Component c) {
-            while (c != null) {
-                if (c instanceof JComponent) {
-                    JComponent jc = (JComponent) c;
-                    if (jc.getBorder() instanceof AeroBorder) {
-                        if (AeroBorder.updateState(jc)) {
-                            jc.repaint();
+                        if (aeroEditor != null) {
+                            updateAeroBorder(aeroEditor);
                         }
                         return;
-                    }
-                }
-                c = c.getParent();
-            }
-        }
-    }
-
-    private static class AeroBorder implements Border, UIResource {
-        // Color0    Color1    Color2    Color1    Color0
-        // Color3    Color4              Color4    Color3
-        // Color3                                  Color3
-        // Color3    Color4              Color4    Color3
-        // Color5    Color6    Color6    Color6    Color5
-        private static final Color[] HILIGHTED_COLORS = {
-                new Color(150, 191, 194), new Color(92, 147, 188),
-                new Color(61, 123, 173), new Color(198, 222, 238),
-                new Color(181, 207, 231), new Color(195, 223, 216),
-                new Color(183, 217, 237)};
-        private static final Color[] NORMAL_COLORS = {
-                new Color(191, 210, 196), new Color(187, 189, 194),
-                new Color(171, 173, 179), new Color(226, 227, 234),
-                new Color(233, 236, 240), new Color(212, 230, 217),
-                new Color(227, 233, 239)};
-        private static final Color[] DISABLED_COLORS = {
-                new Color(183, 204, 185), new Color(175, 175, 175),
-                new Color(175, 175, 175), new Color(175, 175, 175),
-                new Color(227, 227, 227), new Color(183, 204, 185),
-                new Color(175, 175, 175)};
-        private Insets insets;
-
-        private AeroBorder(int top, int left, int bottom, int right) {
-            insets = new Insets(top, left, bottom, right);
-        }
-
-        @Override
-        public void paintBorder(Component c, Graphics g,
-                int x, int y, int width, int height) {
-            if (!(c instanceof JComponent)) {
-                return;
-            }
-
-            JComponent jc = (JComponent) c;
-            AeroBorderState state;
-            state = (AeroBorderState) jc.getClientProperty(
-                    PropertyKey.AERO_BORDER_STATE);
-            if (state == null) {
-                updateState((JComponent) c);
-                state = (AeroBorderState) jc.getClientProperty(
-                        PropertyKey.AERO_BORDER_STATE);
-            }
-
-            int w = width - 1;
-            int h = height - 1;
-            switch (state) {
-                case NORMAL:
-                    paintBorder(g, NORMAL_COLORS, x, y, w, h);
-                    return;
-                case HIGHLIGHTED:
-                    paintBorder(g, HILIGHTED_COLORS, x, y, w, h);
-                    return;
-                case DISABLED:
-                    paintBorder(g, DISABLED_COLORS, x, y, w, h);
-            }
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c) {
-            return insets;
-        }
-
-        @Override
-        public boolean isBorderOpaque() {
-            return false;
-        }
-
-        private void paintBorder(Graphics g, Color[] colors,
-                int x, int y, int w, int h) {
-            g.setColor(colors[0]);
-            g.drawLine(x, y, x, y);
-            g.drawLine(x + w, y, x + w, y);
-
-            g.setColor(colors[1]);
-            g.drawLine(x + 1, y, x + 1, y);
-            g.drawLine(x + w - 1, y, x + w - 1, y);
-
-            g.setColor(colors[2]);
-            g.drawLine(x + 2, y, x + w - 2, y);
-
-            g.setColor(colors[3]);
-            g.drawLine(x, y + 1, x, y + h - 1);
-            g.drawLine(x + w, y + 1, x + w, y + h - 1);
-
-            g.setColor(colors[4]);
-            g.drawLine(x + 1, y + 1, x + 1, y + 1);
-            g.drawLine(x + w - 1, y + 1, x + w - 1, y + 1);
-            g.drawLine(x + 1, y + h - 1, x + 1, y + h - 1);
-            g.drawLine(x + w - 1, y + h - 1, x + w - 1, y + h - 1);
-
-            g.setColor(colors[5]);
-            g.drawLine(x, y + h, x, y + h);
-            g.drawLine(x + w, y + h, x + w, y + h);
-
-            g.setColor(colors[6]);
-            g.drawLine(x + 1, y + h, x + w - 1, y + h);
-        }
-
-        private static boolean updateState(JComponent c) {
-            JComponent editor = c;
-            if (c instanceof JScrollPane) {
-                Component view = ((JScrollPane) c).getViewport().getView();
-                if (view instanceof JComponent) {
-                    editor = (JComponent) view;
+                    case MouseEvent.MOUSE_MOVED:
+                        if (activeAeroEditor != null) {
+                            updateAeroBorder(activeAeroEditor);
+                        }
+                        if (aeroEditor != null) {
+                            activeAeroEditor = aeroEditor;
+                            updateAeroBorder(aeroEditor);
+                        }
                 }
             }
-
-            AeroBorderState state = null;
-            boolean enabled = editor.isEnabled();
-            boolean editable = false;
-            if (editor instanceof JTextComponent) {
-                editable = ((JTextComponent) editor).isEditable();
-            } else if (editor instanceof JComboBox) {
-                editable = ((JComboBox<?>) editor).isEditable();
-                if (!editable) {
-                    state = AeroBorderState.NONE;
-                }
-            } else if (editor instanceof JSpinner
-                    || editor instanceof JList || editor instanceof JTree) {
-                editable = enabled;
-            } else if (editor instanceof JTree) {
-                state = AeroBorderState.NONE;
-            } else if (Boolean.TRUE.equals(editor.getClientProperty("editable"))) {
-                editable = true;
-            }
-
-            if (state == null) {
-                if (enabled) {
-                    boolean focused = false;
-                    Component fo = FocusManager.getCurrentManager().getFocusOwner();
-                    if (fo != null && SwingUtilities.isDescendingFrom(fo, c)) {
-                        focused = true;
-                    }
-                    if (editable && (focused || c.getMousePosition() != null)) {
-                        // JSpinner.getMousePosition may strangely return
-                        // a non-null value even if the mouse is outside of its
-                        // bounds. There seems to be no way to fix this issue...
-                        state = AeroBorderState.HIGHLIGHTED;
-                    } else {
-                        state = AeroBorderState.NORMAL;
-                    }
-                } else {
-                    state = AeroBorderState.DISABLED;
-                }
-            }
-
-            if (state != c.getClientProperty(PropertyKey.AERO_BORDER_STATE)) {
-                c.putClientProperty(PropertyKey.AERO_BORDER_STATE, state);
-                return true;
-            }
-            return false;
         }
-    }
 
-    private static enum AeroBorderState {
-        NORMAL, HIGHLIGHTED, DISABLED, NONE;
+        private void updateAeroBorder(JComponent c) {
+            if (AeroEditorBorder.updateState(c)) {
+                c.repaint();
+            }
+        }
     }
 
     private static class ShadowPopupFactory extends PopupFactory {
-        private static final Border POPUP_SHADOW_BORDER = new ShadowBorder(4, 4);
+        private static final ShadowBorder POPUP_SHADOW_BORDER = new ShadowBorder(4, 4);
+        private static final JPanel PATCH = new JPanel();
 
         @Override
         public Popup getPopup(Component owner, Component contents, int x, int y) {
@@ -858,77 +720,24 @@ public final class SwingUtils {
 
             Container parent = contents.getParent();
             if (parent instanceof JComponent) {
-                JComponent c = (JComponent) parent;
-                c.setOpaque(false);
-                c.setBorder(POPUP_SHADOW_BORDER);
-                c.setSize(c.getPreferredSize());
+                JComponent p = (JComponent) parent;
+                p.setOpaque(false);
+                p.setBorder(POPUP_SHADOW_BORDER);
+                p.setSize(p.getPreferredSize());
+                if (contents instanceof JToolTip
+                        && ((JToolTip) contents).getBorder() instanceof AeroToolTipBorder) {
+                    // Aero tool tip has round corners, so we add a small "patch"
+                    // to the bottom-right corner to get rid of the noisy point.
+                    p.setLayout(null);
+                    Dimension size = contents.getPreferredSize();
+                    contents.setBounds(0, 0, size.width, size.height);
+                    PATCH.setBackground(POPUP_SHADOW_BORDER.getDark().brighter());
+                    p.add(PATCH);
+                    PATCH.setBounds(p.getWidth() - 5, p.getHeight() - 5, 1, 1);
+                }
             }
 
             return popup;
-        }
-    }
-
-    private static class ShadowBorder implements Border, UIResource {
-        private static final Color DARK = new Color(0, 0, 0, 80);
-        private static final Color BRIGHT = new Color(0, 0, 0, 2);
-        private static final float[] RADIAL_FRACTIONS = {0.0F, 1.0F};
-        private static final Color[] RADIAL_COLORS = {DARK.brighter(), BRIGHT.brighter()};
-
-        private int thickness;
-        private int offset;
-        private Insets insets;
-
-        private ShadowBorder(int thickness, int offset) {
-            this.thickness = thickness;
-            this.offset = offset;
-            insets = new Insets(0, 0, thickness, thickness);
-        }
-
-        @Override
-        public void paintBorder(Component c, Graphics g,
-                int x, int y, int width, int height) {
-            Graphics2D g2 = (Graphics2D) g;
-
-            // Paint the upper right corner.
-            int ox = width - thickness;
-            int oy = offset;
-            g2.setPaint(new RadialGradientPaint(ox, oy + thickness, thickness,
-                    RADIAL_FRACTIONS, RADIAL_COLORS));
-            g2.fillRect(ox, oy, thickness, thickness);
-
-            // Paint the right side.
-            oy = offset + thickness;
-            g2.setPaint(new GradientPaint(
-                    ox, oy, DARK, ox + thickness, oy, BRIGHT));
-            g2.fillRect(ox, oy, thickness, height - offset - 2 * thickness);
-
-            // Paint the lower right corner.
-            oy = height - thickness;
-            g2.setPaint(new RadialGradientPaint(ox, oy, thickness,
-                    RADIAL_FRACTIONS, RADIAL_COLORS));
-            g2.fillRect(ox, oy, thickness, thickness);
-
-            // Paint the bottom side.
-            ox = offset + thickness;
-            g2.setPaint(new GradientPaint(
-                    ox, oy, DARK, ox, oy + thickness, BRIGHT));
-            g2.fillRect(ox, oy, width - offset - 2 * thickness, thickness);
-
-            // Lowerleft
-            ox = offset;
-            g2.setPaint(new RadialGradientPaint(ox + thickness, oy, thickness,
-                    RADIAL_FRACTIONS, RADIAL_COLORS));
-            g2.fillRect(ox, oy, thickness, thickness);
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c) {
-            return insets;
-        }
-
-        @Override
-        public boolean isBorderOpaque() {
-            return false;
         }
     }
 
@@ -940,101 +749,99 @@ public final class SwingUtils {
         @Override
         public void eventDispatched(AWTEvent event) {
             MouseEvent me = (MouseEvent) event;
-            if (me.isPopupTrigger()) {
-                if (me.getComponent() instanceof JTextComponent) {
-                    JTextComponent tc = (JTextComponent) me.getComponent();
-                    if (tc.isEnabled() && tc.getComponentPopupMenu() == null) {
-                        ContextActionHandler cah = (ContextActionHandler)
-                                tc.getClientProperty(ContextActionHandler.KEY);
-                        if (cah == null) {
-                            cah = new TextContextActionHandler(tc);
-                            tc.putClientProperty(ContextActionHandler.KEY, cah);
-                        }
-
-                        Action[] popupActions = TEXT_POPUP_ACTION_MAP.get(tc);
-                        if (popupActions == null) {
-                            popupActions = new Action[11];
-                            popupActions[0] = ContextActionFactory.createUndoAction(tc);
-                            popupActions[1] = ContextActionFactory.createRedoAction(tc);
-                            popupActions[2] = ContextActionFactory.createCutAction(tc);
-                            popupActions[3] = ContextActionFactory.createCopyAction(tc);
-                            popupActions[4] = ContextActionFactory.createPasteAction(tc);
-                            popupActions[5] = ContextActionFactory.createDeleteAction(tc);
-                            popupActions[6] = ContextActionFactory.createSelectAllAction(tc);
-                            popupActions[7] = ContextActionFactory.createCutAllAction(tc);
-                            popupActions[8] = ContextActionFactory.createCopyAllAction(tc);
-                            popupActions[9] = ContextActionFactory.createReplaceAllAction(tc);
-                            popupActions[10] = ContextActionFactory.createDeleteAllAction(tc);
-                            TEXT_POPUP_ACTION_MAP.put(tc, popupActions);
-                        }
-
-                        boolean editable = tc.isEditable();
-                        boolean hasText = !SwingUtils.getRawText(tc).isEmpty();
-                        boolean hasSelectedText = tc.getSelectedText() != null;
-                        boolean canImport = tc.getTransferHandler().canImport(tc,
-                                Toolkit.getDefaultToolkit().getSystemClipboard()
-                                        .getAvailableDataFlavors());
-                        TEXT_POPUP_MENU.removeAll();
-                        if (editable) {
-                            UndoManager um = cah.getUndoManager();
-                            popupActions[0].putValue(Action.NAME,
-                                    um.getUndoPresentationName());
-                            popupActions[0].setEnabled(um.canUndo());
-                            popupActions[1].putValue(Action.NAME,
-                                    um.getRedoPresentationName());
-                            popupActions[1].setEnabled(um.canRedo());
-                            TEXT_POPUP_MENU.add(popupActions[0]);    // Undo
-                            TEXT_POPUP_MENU.add(popupActions[1]);    // Redo
-                            TEXT_POPUP_MENU.addSeparator();
-                            popupActions[2].setEnabled(hasSelectedText);
-                            TEXT_POPUP_MENU.add(popupActions[2]);    // Cut
-                        }
-                        popupActions[3].setEnabled(hasSelectedText);
-                        TEXT_POPUP_MENU.add(popupActions[3]);    // Copy
-                        if (editable) {
-                            popupActions[4].setEnabled(canImport);
-                            TEXT_POPUP_MENU.add(popupActions[4]);    // Paste
-                            popupActions[5].setEnabled(hasSelectedText);
-                            TEXT_POPUP_MENU.add(popupActions[5]);    // Delete
-                        }
-                        TEXT_POPUP_MENU.addSeparator();
-                        if (editable) {
-                            popupActions[6].setEnabled(hasText);
-                            TEXT_POPUP_MENU.add(popupActions[6]);    // Select All
-                            popupActions[7].setEnabled(hasText);
-                            TEXT_POPUP_MENU.add(popupActions[7]);    // Cut All
-                        }
-                        popupActions[7].setEnabled(hasText);
-                        TEXT_POPUP_MENU.add(popupActions[8]);    // Copy All
-                        if (editable) {
-                            popupActions[9].setEnabled(canImport);
-                            TEXT_POPUP_MENU.add(popupActions[9]);    // Replace All
-                            popupActions[10].setEnabled(hasText);
-                            TEXT_POPUP_MENU.add(popupActions[10]);    // Delete All
-                        }
-                        TEXT_POPUP_MENU.show(tc, me.getX(), me.getY());
+            if (me.isPopupTrigger() && me.getComponent() instanceof JTextComponent) {
+                JTextComponent tc = (JTextComponent) me.getComponent();
+                if (tc.isEnabled() && tc.getComponentPopupMenu() == null) {
+                    ContextActionHandler cah = (ContextActionHandler)
+                            tc.getClientProperty(ContextActionHandler.KEY);
+                    if (cah == null) {
+                        cah = new TextContextActionHandler(tc);
+                        tc.putClientProperty(ContextActionHandler.KEY, cah);
                     }
+
+                    Action[] popupActions = TEXT_POPUP_ACTION_MAP.get(tc);
+                    if (popupActions == null) {
+                        popupActions = new Action[11];
+                        popupActions[0] = ContextActionFactory.createUndoAction(tc);
+                        popupActions[1] = ContextActionFactory.createRedoAction(tc);
+                        popupActions[2] = ContextActionFactory.createCutAction(tc);
+                        popupActions[3] = ContextActionFactory.createCopyAction(tc);
+                        popupActions[4] = ContextActionFactory.createPasteAction(tc);
+                        popupActions[5] = ContextActionFactory.createDeleteAction(tc);
+                        popupActions[6] = ContextActionFactory.createSelectAllAction(tc);
+                        popupActions[7] = ContextActionFactory.createCutAllAction(tc);
+                        popupActions[8] = ContextActionFactory.createCopyAllAction(tc);
+                        popupActions[9] = ContextActionFactory.createReplaceAllAction(tc);
+                        popupActions[10] = ContextActionFactory.createDeleteAllAction(tc);
+                        TEXT_POPUP_ACTION_MAP.put(tc, popupActions);
+                    }
+
+                    boolean editable = tc.isEditable();
+                    boolean hasText = !SwingUtils.getRawText(tc).isEmpty();
+                    boolean hasSelectedText = tc.getSelectedText() != null;
+                    boolean canImport = tc.getTransferHandler().canImport(tc,
+                            Toolkit.getDefaultToolkit().getSystemClipboard()
+                                    .getAvailableDataFlavors());
+                    TEXT_POPUP_MENU.removeAll();
+                    if (editable) {
+                        UndoManager um = cah.getUndoManager();
+                        popupActions[0].putValue(Action.NAME,
+                                um.getUndoPresentationName());
+                        popupActions[0].setEnabled(um.canUndo());
+                        popupActions[1].putValue(Action.NAME,
+                                um.getRedoPresentationName());
+                        popupActions[1].setEnabled(um.canRedo());
+                        TEXT_POPUP_MENU.add(popupActions[0]);    // Undo
+                        TEXT_POPUP_MENU.add(popupActions[1]);    // Redo
+                        TEXT_POPUP_MENU.addSeparator();
+                        popupActions[2].setEnabled(hasSelectedText);
+                        TEXT_POPUP_MENU.add(popupActions[2]);    // Cut
+                    }
+                    popupActions[3].setEnabled(hasSelectedText);
+                    TEXT_POPUP_MENU.add(popupActions[3]);    // Copy
+                    if (editable) {
+                        popupActions[4].setEnabled(canImport);
+                        TEXT_POPUP_MENU.add(popupActions[4]);    // Paste
+                        popupActions[5].setEnabled(hasSelectedText);
+                        TEXT_POPUP_MENU.add(popupActions[5]);    // Delete
+                    }
+                    TEXT_POPUP_MENU.addSeparator();
+                    popupActions[6].setEnabled(hasText);
+                    TEXT_POPUP_MENU.add(popupActions[6]);    // Select All
+                    if (editable) {
+                        popupActions[7].setEnabled(hasText);
+                        TEXT_POPUP_MENU.add(popupActions[7]);    // Cut All
+                    }
+                    popupActions[7].setEnabled(hasText);
+                    TEXT_POPUP_MENU.add(popupActions[8]);    // Copy All
+                    if (editable) {
+                        popupActions[9].setEnabled(canImport);
+                        TEXT_POPUP_MENU.add(popupActions[9]);    // Replace All
+                        popupActions[10].setEnabled(hasText);
+                        TEXT_POPUP_MENU.add(popupActions[10]);    // Delete All
+                    }
+                    TEXT_POPUP_MENU.show(tc, me.getX(), me.getY());
                 }
             }
         }
     }
 
     private static class GroupLayoutStyle extends LayoutStyle {
-        private LayoutStyle delegatedLayoutStyle;
+        private LayoutStyle defaultLayoutStyle;
 
-        private GroupLayoutStyle(LayoutStyle delegatedLayoutStyle) {
-            this.delegatedLayoutStyle = delegatedLayoutStyle;
+        private GroupLayoutStyle() {
+            this.defaultLayoutStyle = UIManager.getLookAndFeel().getLayoutStyle();
         }
 
         @Override
         public int getPreferredGap(JComponent component1, JComponent component2,
                 ComponentPlacement type, int position, Container parent) {
             if (type == ComponentPlacement.INDENT) {
-                return 2 * delegatedLayoutStyle.getPreferredGap(
+                return 2 * defaultLayoutStyle.getPreferredGap(
                         component1, component2, ComponentPlacement.UNRELATED,
                         position, parent);
             } else {
-                return delegatedLayoutStyle.getPreferredGap(
+                return defaultLayoutStyle.getPreferredGap(
                         component1, component2, type, position, parent);
             }
         }
@@ -1042,7 +849,7 @@ public final class SwingUtils {
         @Override
         public int getContainerGap(JComponent component,
                 int position, Container parent) {
-            return delegatedLayoutStyle.getContainerGap(
+            return defaultLayoutStyle.getContainerGap(
                     component, position, parent);
         }
     }
@@ -1070,6 +877,6 @@ public final class SwingUtils {
     }
 
     private static enum PropertyKey {
-        METAL_THEME, TEXT_BACKGROUND_MONITORED, AERO_BORDER_STATE;
+        METAL_THEME, TEXT_BACKGROUND_MONITORED;
     }
 }
