@@ -20,17 +20,21 @@ import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Graphics;
 import java.awt.Insets;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ResourceBundle;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicHTML;
 
 /**
@@ -40,6 +44,30 @@ import javax.swing.plaf.basic.BasicHTML;
  */
 @SuppressWarnings("serial")
 public class Link extends JButton {
+    private static final JPopupMenu POPUP_MENU = new JPopupMenu();
+    private static final JMenuItem COPY_LINK_MENU_ITEM = new JMenuItem();
+    private static final String BUNDLE = "zhyi.zse.swing.Link";
+    static {
+        COPY_LINK_MENU_ITEM.setText(
+                ResourceBundle.getBundle(BUNDLE).getString("copyLink"));
+        COPY_LINK_MENU_ITEM.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Link link = (Link) POPUP_MENU.getInvoker();
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                        new StringSelection(link.getUri().toString()), null);
+            }
+        });
+        COPY_LINK_MENU_ITEM.addPropertyChangeListener(
+                "locale", new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                COPY_LINK_MENU_ITEM.setText(
+                        ResourceBundle.getBundle(BUNDLE).getString("copyLink"));
+            }
+        });
+    }
+
     private boolean visited;
     private String styledText;
 
@@ -101,6 +129,23 @@ public class Link extends JButton {
         setMargin(new Insets(0, 0, 0, 0));
         setBorderPainted(false);
 
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mayShowDefaultPopupMenu(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                mayShowDefaultPopupMenu(e);
+            }
+
+            private void mayShowDefaultPopupMenu(MouseEvent e) {
+                if (e.isPopupTrigger() && getComponentPopupMenu() == null) {
+                    POPUP_MENU.show(Link.this, e.getX(), e.getY());
+                }
+            }
+        });
         addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
