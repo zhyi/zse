@@ -24,6 +24,7 @@ import java.util.ResourceBundle;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JComponent;
+import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import zhyi.zse.lang.ReflectionUtils;
 
@@ -31,7 +32,7 @@ import zhyi.zse.lang.ReflectionUtils;
  * Factory methods to create context actions for a component.
  * <p>
  * All created actions are based on the {@link ContextActionHandler} client
- * property of the target component, with the property name as
+ * property of the component that originates actions, with the property name as
  * {@link ContextActionHandler#KEY}.
  *
  * @author Zhao Yi
@@ -52,11 +53,12 @@ public class ContextActionFactory {
      * Creates an {@link ContextActionHandler#undo() undo} action, with
      * {@code Ctrl+Z} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createUndoAction(final JComponent c) {
+    public static Action createUndoAction(JComponent c) {
         return createAction(c, ActionKey.undo, "ctrl Z");
     }
 
@@ -64,11 +66,12 @@ public class ContextActionFactory {
      * Creates an {@link ContextActionHandler#undo() undo} action, with
      * {@code Ctrl+Y} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createRedoAction(final JComponent c) {
+    public static Action createRedoAction(JComponent c) {
         return createAction(c, ActionKey.redo, "ctrl Y");
     }
 
@@ -76,11 +79,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#redo() redo} action, with
      * {@code Ctrl+X} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createCutAction(final JComponent c) {
+    public static Action createCutAction(JComponent c) {
         return createAction(c, ActionKey.cut, "ctrl X");
     }
 
@@ -88,11 +92,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#copy() copy} action, with
      * {@code Ctrl+C} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createCopyAction(final JComponent c) {
+    public static Action createCopyAction(JComponent c) {
         return createAction(c, ActionKey.copy, "ctrl C");
     }
 
@@ -100,11 +105,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#paste() paste} action, with
      * {@code Ctrl+V} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createPasteAction(final JComponent c) {
+    public static Action createPasteAction(JComponent c) {
         return createAction(c, ActionKey.paste, "ctrl V");
     }
 
@@ -112,11 +118,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#delete() delete} action, with
      * {@code Delete} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createDeleteAction(final JComponent c) {
+    public static Action createDeleteAction(JComponent c) {
         return createAction(c, ActionKey.delete, "DELETE");
     }
 
@@ -124,11 +131,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#selectAll() select-all} action,
      * with {@code Ctrl+A} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createSelectAllAction(final JComponent c) {
+    public static Action createSelectAllAction(JComponent c) {
         return createAction(c, ActionKey.selectAll, "ctrl A");
     }
 
@@ -136,11 +144,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#cutAll() cut-all} action, with
      * {@code Ctrl+Shift+X} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createCutAllAction(final JComponent c) {
+    public static Action createCutAllAction(JComponent c) {
         return createAction(c, ActionKey.cutAll, "ctrl shift X");
     }
 
@@ -148,11 +157,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#copyAll() copy-all} action, with
      * {@code Ctrl+Shift+C} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createCopyAllAction(final JComponent c) {
+    public static Action createCopyAllAction(JComponent c) {
         return createAction(c, ActionKey.copyAll, "ctrl shift C");
     }
 
@@ -160,11 +170,12 @@ public class ContextActionFactory {
      * Creates a {@link ContextActionHandler#replaceAll() replace-all} action,
      * with {@code Ctrl+Shift+V} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createReplaceAllAction(final JComponent c) {
+    public static Action createReplaceAllAction(JComponent c) {
         return createAction(c, ActionKey.replaceAll, "ctrl shift V");
     }
 
@@ -172,22 +183,25 @@ public class ContextActionFactory {
      * Creates an {@link ContextActionHandler#deleteAll() delete-all} action,
      * with {@code Ctrl+Delete} as the accelerator key.
      *
-     * @param c The component that originates this action.
+     * @param c The component that originates this action. If it is a popup menu,
+     *          its invoker is treated as the originator.
      *
      * @return The created action object.
      */
-    public static Action createDeleteAllAction(final JComponent c) {
+    public static Action createDeleteAllAction(JComponent c) {
         return createAction(c, ActionKey.deleteAll, "ctrl DELETE");
     }
 
     @SuppressWarnings("serial")
     private static Action createAction(
-            final JComponent c, final ActionKey key, String ks) {
+            JComponent c, final ActionKey key, String ks) {
+        final JComponent invoker = c instanceof JPopupMenu
+                ? (JComponent) ((JPopupMenu) c).getInvoker() : c;
         final String name = key.name();
         Action a = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Object cah = c.getClientProperty(ContextActionHandler.KEY);
+                Object cah = invoker.getClientProperty(ContextActionHandler.KEY);
                 if (cah instanceof ContextActionHandler) {
                     ReflectionUtils.invoke(METHOD_MAP.get(name), cah);
                 }
@@ -200,8 +214,8 @@ public class ContextActionFactory {
         a.putValue(Action.ACTION_COMMAND_KEY, name);
         KeyStroke ak = KeyStroke.getKeyStroke(ks);
         a.putValue(Action.ACCELERATOR_KEY, ak);
-        c.getInputMap(JComponent.WHEN_FOCUSED).put(ak, key);
-        c.getActionMap().put(key, a);
+        invoker.getInputMap(JComponent.WHEN_FOCUSED).put(ak, key);
+        invoker.getActionMap().put(key, a);
         return a;
     }
 
