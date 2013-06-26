@@ -209,6 +209,7 @@ public class ContextActionFactory {
         };
         ResourceBundle rb = ResourceBundle.getBundle(BUNDLE);
         if (rb.containsKey(name)) {
+            // Not an undo or redo action.
             a.putValue(Action.NAME, rb.getString(name));
         }
         a.putValue(Action.ACTION_COMMAND_KEY, name);
