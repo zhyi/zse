@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.URI;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JPopupMenu;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicHTML;
@@ -131,13 +132,6 @@ public class Link extends JButton {
                 } else if (name.equals("UI")) {
                     styledText = null;
                 }
-            }
-        });
-        getModel().addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                revalidate();
-                repaint();
             }
         });
     }
