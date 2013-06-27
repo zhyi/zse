@@ -17,13 +17,10 @@
 package zhyi.zse.swing;
 
 import java.awt.AWTEvent;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.AWTEventListener;
@@ -31,7 +28,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ContainerEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Field;
@@ -41,8 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.WeakHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
@@ -50,18 +44,12 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
-import javax.swing.JToolTip;
-import javax.swing.JViewport;
 import javax.swing.LayoutStyle;
-import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.LookAndFeel;
-import javax.swing.Painter;
-import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
@@ -84,6 +72,7 @@ import zhyi.zse.swing.AeroToolTipBorder.AeroToolTipBorderUIResource;
 import zhyi.zse.swing.plaf.AeroComboBoxUI;
 import zhyi.zse.swing.plaf.AeroScrollPaneBorder;
 import zhyi.zse.swing.plaf.AeroToolTipUI;
+import zhyi.zse.swing.plaf.NimbusTextBackgroundPainter;
 
 /**
  * Utility methods for Swing.
@@ -91,8 +80,6 @@ import zhyi.zse.swing.plaf.AeroToolTipUI;
  * @author Zhao Yi
  */
 public final class SwingUtils {
-    private static final String BUNDLE = "zhyi.zse.swing.TextContextAction";
-    private static final Pattern MNEMONIC_PATTERN = Pattern.compile("_._");
     private static final AWTEventListener CONTAINER_HANDLER = new ContainerHandler();
     private static final AWTEventListener AERO_EDITOR_BORDER_HANDLER
             = new AeroEditorBorderHandler();
@@ -105,7 +92,7 @@ public final class SwingUtils {
     private static boolean containerMonitored;
     private static boolean lafMonitored;
     private static boolean localeMonitored;
-    private static boolean aeroBorderMonitored;
+    private static boolean aeroEditorBorderMonitored;
     private static boolean shadowPopupEnabled;
     private static boolean defaultTextPopupEnabled;
 
@@ -234,13 +221,15 @@ public final class SwingUtils {
      *
      * @param label The label.
      * @param text  The text with an optional mnemonic character.
+     *
+     * @see Mnemonic#analyze
      */
     public static void setTextWithMnemonic(JLabel label, String text) {
-        Mnemonic mnemonic = analyzeMnemonic(text);
+        Mnemonic mnemonic = Mnemonic.analyze(text);
         if (mnemonic != null) {
-            label.setText(mnemonic.text);
-            label.setDisplayedMnemonic(mnemonic.mnemonicChar);
-            label.setDisplayedMnemonicIndex(mnemonic.mnemonicIndex);
+            label.setText(mnemonic.getText());
+            label.setDisplayedMnemonic(mnemonic.getMnemonicChar());
+            label.setDisplayedMnemonicIndex(mnemonic.getInex());
         } else {
             label.setText(text);
         }
@@ -255,41 +244,17 @@ public final class SwingUtils {
      *
      * @param button The button.
      * @param text   The text with an optional mnemonic character.
+     *
+     * @see Mnemonic#analyze
      */
     public static void setTextWithMnemonic(AbstractButton button, String text) {
-        Mnemonic mnemonic = analyzeMnemonic(text);
+        Mnemonic mnemonic = Mnemonic.analyze(text);
         if (mnemonic != null) {
-            button.setText(mnemonic.text);
-            button.setMnemonic(mnemonic.mnemonicChar);
-            button.setDisplayedMnemonicIndex(mnemonic.mnemonicIndex);
+            button.setText(mnemonic.getText());
+            button.setMnemonic(mnemonic.getMnemonicChar());
+            button.setDisplayedMnemonicIndex(mnemonic.getInex());
         } else {
             button.setText(text);
-        }
-    }
-
-    private static Mnemonic analyzeMnemonic(String text) {
-        if (text == null) {
-            return null;
-        }
-
-        Matcher matcher = MNEMONIC_PATTERN.matcher(text);
-        if (matcher.find()) {
-            String mnemonicMark = matcher.group();
-            char mnemonicChar = mnemonicMark.charAt(1);
-            int start = matcher.start();
-            int end = matcher.end();
-            StringBuilder sb = new StringBuilder()
-                    .append(text.substring(0, start));
-            if (BasicHTML.isHTMLString(text)) {
-                // HTML can be complex so it doesn't always work as expected.
-                sb.append("<u>").append(mnemonicChar).append("</u>");
-            } else {
-                sb.append(mnemonicChar);
-            }
-            sb.append(text.substring(end));
-            return new Mnemonic(sb.toString(), mnemonicChar, start);
-        } else {
-            return null;
         }
     }
 
@@ -390,7 +355,7 @@ public final class SwingUtils {
         LayoutStyle.setInstance(new GroupLayoutStyle());
 
         // Fix specific L&F issues.
-        UIDefaults uid = UIManager.getDefaults();
+        UIDefaults uid = UIManager.getLookAndFeelDefaults();
         String laf = UIManager.getLookAndFeel().getName();
         if (laf.equals("Windows")
                 && Double.parseDouble(System.getProperty("os.version")) >= 6.0
@@ -412,10 +377,10 @@ public final class SwingUtils {
             uid.put("TextPane.inactiveBackground",
                     UIManager.get("TextPane.disabledBackground"));
 
-            if (!aeroBorderMonitored) {
+            if (!aeroEditorBorderMonitored) {
                 tk.addAWTEventListener(AERO_EDITOR_BORDER_HANDLER,
                         AWTEvent.FOCUS_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK);
-                aeroBorderMonitored = true;
+                aeroEditorBorderMonitored = true;
             }
         } else {
             if (laf.equals("Nimbus")) {
@@ -443,9 +408,9 @@ public final class SwingUtils {
                                 UIManager.get("TextPane[Enabled].backgroundPainter")));
             }
 
-            if (aeroBorderMonitored) {
+            if (aeroEditorBorderMonitored) {
                 tk.removeAWTEventListener(AERO_EDITOR_BORDER_HANDLER);
-                aeroBorderMonitored = false;
+                aeroEditorBorderMonitored = false;
             }
         }
     }
@@ -505,80 +470,6 @@ public final class SwingUtils {
             Toolkit.getDefaultToolkit().addAWTEventListener(
                     CONTAINER_HANDLER, AWTEvent.CONTAINER_EVENT_MASK);
             containerMonitored = true;
-        }
-    }
-
-    private static class Mnemonic {
-        private String text;
-        private char mnemonicChar;
-        private int mnemonicIndex;
-
-        private Mnemonic(String text, char mnemonicChar, int mnemonicIndex) {
-            this.text = text;
-            this.mnemonicChar = mnemonicChar;
-            this.mnemonicIndex = mnemonicIndex;
-        }
-    }
-
-    private static class NimbusTextBackgroundPainter implements Painter<JTextComponent> {
-        private static final Decoder DECODER = new Decoder();
-        private static final Color INACTIVE_TEXT_BACKGROUND = DECODER.decodeColor0(
-                "nimbusBlueGrey", -0.015872955F, -0.07995863F, 0.15294117F, 0);
-
-        private AbstractRegionPainter originalPainter;
-        private Rectangle2D.Float rec;
-
-        private NimbusTextBackgroundPainter(AbstractRegionPainter originalPainter) {
-            this.originalPainter = originalPainter;
-        }
-
-        @Override
-        public void paint(Graphics2D g, JTextComponent tc, int width, int height) {
-            originalPainter.paint(g, tc, width, height);
-            if (!tc.isEditable() && tc.getBackground().equals(UIManager.getColor(
-                    ReflectionUtils.invoke(GET_PROPERTY_PREFIX, tc.getUI()) + ".background"))) {
-                // If the text component is not editable, and the background is
-                // not explicitly set, repaint the background. Note that in Nimbus
-                // L&F, isBackgroundSet() always returns true so it's not reliable.
-                // The above check is imperfect but should have covered most cases.
-                g.setPaint(INACTIVE_TEXT_BACKGROUND);
-                if (tc.getParent() instanceof JViewport) {
-                    rec.setRect(DECODER.decodeX0(0.0F), DECODER.decodeY0(0.0F),
-                            DECODER.decodeX0(3.0F) - DECODER.decodeX0(0.0F),
-                            DECODER.decodeY0(3.0F) - DECODER.decodeY0(0.0F));
-                } else {
-                    rec.setRect(DECODER.decodeX0(0.4F), DECODER.decodeY0(0.4F),
-                            DECODER.decodeX0(2.6F) - DECODER.decodeX0(0.4F),
-                            DECODER.decodeY0(2.6F) - DECODER.decodeY0(0.4F));
-                }
-                g.fill(rec);
-            }
-        }
-    }
-
-    private static class Decoder extends AbstractRegionPainter {
-        private float decodeX0(float x) {
-            return super.decodeX(x);
-        }
-
-        private float decodeY0(float y) {
-            return super.decodeY(y);
-        }
-
-        private Color decodeColor0(String key, float hOffset,
-                float sOffset, float bOffset, int aOffset) {
-            return super.decodeColor(key, hOffset, sOffset, bOffset, aOffset);
-        }
-
-        @Override
-        protected PaintContext getPaintContext() {
-            throw new UnsupportedOperationException("Not supported.");
-        }
-
-        @Override
-        protected void doPaint(Graphics2D g, JComponent c,
-                int width, int height, Object[] extendedCacheKeys) {
-            throw new UnsupportedOperationException("Not supported.");
         }
     }
 
@@ -659,8 +550,6 @@ public final class SwingUtils {
         }
     }
 
-    
-
     private static class AeroEditorBorderHandler implements AWTEventListener {
         private JComponent activeAeroEditor;
 
@@ -703,44 +592,6 @@ public final class SwingUtils {
             if (AeroEditorBorder.updateState(c)) {
                 c.repaint();
             }
-        }
-    }
-
-    private static class ShadowPopupFactory extends PopupFactory {
-        private static final ShadowBorder POPUP_SHADOW_BORDER = new ShadowBorder(4, 4);
-        private static final JPanel PATCH = new JPanel();
-
-        @Override
-        public Popup getPopup(Component owner, Component contents, int x, int y) {
-            Popup popup = super.getPopup(owner, contents, x, y);
-
-            // If the popup component is contained in a heavy weight window,
-            // make that window's background transparent.
-            Window popupWindow = SwingUtilities.getWindowAncestor(contents);
-            if (popupWindow != null) {
-                popupWindow.setBackground(new Color(0, 0, 0, 0));
-            }
-
-            Container parent = contents.getParent();
-            if (parent instanceof JComponent) {
-                JComponent p = (JComponent) parent;
-                p.setOpaque(false);
-                p.setBorder(POPUP_SHADOW_BORDER);
-                p.setSize(p.getPreferredSize());
-                if (contents instanceof JToolTip
-                        && ((JToolTip) contents).getBorder() instanceof AeroToolTipBorder) {
-                    // Aero tool tip has round corners, so we add a small "patch"
-                    // to the bottom-right corner to get rid of the noisy point.
-                    p.setLayout(null);
-                    Dimension size = contents.getPreferredSize();
-                    contents.setBounds(0, 0, size.width, size.height);
-                    PATCH.setBackground(POPUP_SHADOW_BORDER.getDark().brighter());
-                    p.add(PATCH);
-                    PATCH.setBounds(p.getWidth() - 5, p.getHeight() - 5, 1, 1);
-                }
-            }
-
-            return popup;
         }
     }
 
@@ -832,37 +683,10 @@ public final class SwingUtils {
                         TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.DELETE_ALL))
                                 .setEnabled(hasText);
                     }
+                    TEXT_POPUP_MENU.revalidate();
                     TEXT_POPUP_MENU.show(tc, me.getX(), me.getY());
                 }
             }
-        }
-    }
-
-    private static class GroupLayoutStyle extends LayoutStyle {
-        private LayoutStyle defaultLayoutStyle;
-
-        private GroupLayoutStyle() {
-            this.defaultLayoutStyle = UIManager.getLookAndFeel().getLayoutStyle();
-        }
-
-        @Override
-        public int getPreferredGap(JComponent component1, JComponent component2,
-                ComponentPlacement type, int position, Container parent) {
-            if (type == ComponentPlacement.INDENT) {
-                return 2 * defaultLayoutStyle.getPreferredGap(
-                        component1, component2, ComponentPlacement.UNRELATED,
-                        position, parent);
-            } else {
-                return defaultLayoutStyle.getPreferredGap(
-                        component1, component2, type, position, parent);
-            }
-        }
-
-        @Override
-        public int getContainerGap(JComponent component,
-                int position, Container parent) {
-            return defaultLayoutStyle.getContainerGap(
-                    component, position, parent);
         }
     }
 
