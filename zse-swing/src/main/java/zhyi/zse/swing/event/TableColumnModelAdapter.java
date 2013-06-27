@@ -26,7 +26,7 @@ import javax.swing.event.TableColumnModelListener;
  *
  * @author Zhao Yi
  */
-public class TableColumnModelAdapter implements TableColumnModelListener {
+public abstract class TableColumnModelAdapter implements TableColumnModelListener {
     @Override
     public void columnAdded(TableColumnModelEvent e) {
     }
