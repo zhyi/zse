@@ -28,5 +28,6 @@ implementations of `OptionManager`: `PreferencesOptionManager` and
 
 zse-swing
 ---
-Contains useful classes for Java Swing GUI development, inlcuding a common main
-class `SwingApplication`.
+Contains useful classes for Java Swing GUI development, including new or improved
+components, a simple parser for declarative GUI XML, and utility methods to switch
+Look and Feel at runtime, etc.
