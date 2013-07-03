@@ -32,17 +32,12 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.EnumMap;
 import java.util.Locale;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.WeakHashMap;
 import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -64,11 +59,12 @@ import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.plaf.nimbus.AbstractRegionPainter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
-import javax.swing.undo.UndoManager;
 import zhyi.zse.lang.ExceptionUtils;
 import zhyi.zse.lang.ReflectionUtils;
 import zhyi.zse.swing.AeroEditorBorder.AeroEditorBorderUIResource;
 import zhyi.zse.swing.AeroToolTipBorder.AeroToolTipBorderUIResource;
+import zhyi.zse.swing.cas.ContextActionSupport;
+import zhyi.zse.swing.cas.TextContextActionSupport;
 import zhyi.zse.swing.plaf.AeroComboBoxUI;
 import zhyi.zse.swing.plaf.AeroScrollPaneBorder;
 import zhyi.zse.swing.plaf.AeroToolTipUI;
@@ -81,11 +77,9 @@ import zhyi.zse.swing.plaf.NimbusTextBackgroundPainter;
  */
 public final class SwingUtils {
     private static final AWTEventListener CONTAINER_HANDLER = new ContainerHandler();
-    private static final AWTEventListener AERO_EDITOR_BORDER_HANDLER
-            = new AeroEditorBorderHandler();
+    private static final AWTEventListener AERO_EDITOR_BORDER_HANDLER = new AeroEditorBorderHandler();
     private static final PopupFactory SHADOW_POPUP_FACTORY = new ShadowPopupFactory();
-    private static final AWTEventListener TEXT_COMPONENT_POPUP_HANDLER
-            = new TextComponentPopupHandler();
+    private static final AWTEventListener CONTEXT_POPUP_HANDLER = new ContextPopupHandler();
     private static final Method GET_PROPERTY_PREFIX
             = ReflectionUtils.getDeclaredMethod(BasicTextUI.class, "getPropertyPrefix");
 
@@ -94,7 +88,7 @@ public final class SwingUtils {
     private static boolean localeMonitored;
     private static boolean aeroEditorBorderMonitored;
     private static boolean shadowPopupEnabled;
-    private static boolean defaultTextPopupEnabled;
+    private static boolean casPopupEnabled;
 
     private SwingUtils() {
     }
@@ -285,10 +279,13 @@ public final class SwingUtils {
      * The change takes immediate effect. Additionally, the following fixes and
      * enhancements to the UI are applied:
      * <p>
-     * <b>Default Popup Menus for Text Components</b>
+     * <b>Default Popup Menus</b>
      * <p>
-     * Text components without component popup menus will have default popup
-     * menus with context actions like cut, copy, paste, etc.
+     * Any component that is installed with a client property with the key as
+     * {@link ContextActionSupport#CONTEXT_ACTION_SUPPORT} and the value as
+     * an instance of {@link ContextActionSupport} will have a default popup menu.
+     * Specially, text components are automatically installed with such client
+     * properties.
      * <p>
      * <b>Fixes for Common Look And Feel Issues</b>
      * <ul>
@@ -345,10 +342,9 @@ public final class SwingUtils {
         }
 
         // Add default popup menus for text components.
-        if (!defaultTextPopupEnabled) {
-            tk.addAWTEventListener(
-                    TEXT_COMPONENT_POPUP_HANDLER, AWTEvent.MOUSE_EVENT_MASK);
-            defaultTextPopupEnabled = true;
+        if (!casPopupEnabled) {
+            tk.addAWTEventListener(CONTEXT_POPUP_HANDLER, AWTEvent.MOUSE_EVENT_MASK);
+            casPopupEnabled = true;
         }
 
         // Enlarge the group layout's indent distance.
@@ -486,34 +482,43 @@ public final class SwingUtils {
                 Component c = ce.getChild();
 
                 if (c instanceof JTextComponent) {
+                    JTextComponent tc = (JTextComponent) c;
+
                     // Use text cursors for text components (editable or not)
                     // by default.
-                    if (!c.isCursorSet()) {
-                        c.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+                    if (!tc.isCursorSet()) {
+                        tc.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                     }
 
-                    // Fix the background colors of text components.
-                    if (c instanceof JTextArea || c instanceof JEditorPane
-                            || c instanceof JTextPane) {
-                        Boolean monitored = (Boolean) ((JComponent) c).getClientProperty(
+                    // Fix the background colors of some text components.
+                    if (tc instanceof JTextArea || tc instanceof JEditorPane
+                            || tc instanceof JTextPane) {
+                        Boolean monitored = (Boolean) tc.getClientProperty(
                                 PropertyKey.TEXT_BACKGROUND_MONITORED);
                         if (monitored == null) {
-                            c.addPropertyChangeListener(TEXT_BACKGROUND_MONITOR);
+                            tc.addPropertyChangeListener(TEXT_BACKGROUND_MONITOR);
                             TEXT_BACKGROUND_MONITOR.propertyChange(
-                                    new PropertyChangeEvent(c, "enabled", null, null));
-                            ((JComponent) c).putClientProperty(
+                                    new PropertyChangeEvent(tc, "enabled", null, null));
+                            tc.putClientProperty(
                                     PropertyKey.TEXT_BACKGROUND_MONITORED, Boolean.TRUE);
                         }
                     }
 
                     // Honor display properties for editor panes by default.
-                    if (c instanceof JEditorPane) {
-                        JEditorPane ep = (JEditorPane) c;
+                    if (tc instanceof JEditorPane) {
+                        JEditorPane ep = (JEditorPane) tc;
                         if (ep.getClientProperty(
                                 JEditorPane.HONOR_DISPLAY_PROPERTIES) == null) {
                             ep.putClientProperty(
                                 JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
                         }
+                    }
+
+                    // Add default context action support.
+                    if (tc.getClientProperty(ContextActionSupport.CONTEXT_ACTION_SUPPORT) == null) {
+                        tc.putClientProperty(
+                                ContextActionSupport.CONTEXT_ACTION_SUPPORT,
+                                new TextContextActionSupport(tc));
                     }
                 }
 
@@ -595,96 +600,45 @@ public final class SwingUtils {
         }
     }
 
-    private static class TextComponentPopupHandler implements AWTEventListener {
-        private static final JPopupMenu TEXT_POPUP_MENU = new JPopupMenu();
-        private static final Map<JTextComponent, Map<ContextActionType, JMenuItem>>
-                TEXT_POPUP_ACTION_MAP = new WeakHashMap<>();
-        private static final PropertyChangeListener LOCALE_CHANGE_LISTENER
-                = new PropertyChangeListener() {
-            @Override
-            public void propertyChange(PropertyChangeEvent evt) {
-                JMenuItem menuItem = (JMenuItem) evt.getSource();
-                menuItem.setText(
-                        ResourceBundle.getBundle("zhyi.zse.swing.ContextAction")
-                        .getString(menuItem.getActionCommand()));
-            }
-        };
+    private static class ContextPopupHandler implements AWTEventListener {
+        private int x;
+        private int y;
 
         @Override
         public void eventDispatched(AWTEvent event) {
-            MouseEvent me = (MouseEvent) event;
-            if (me.isPopupTrigger() && me.getComponent() instanceof JTextComponent) {
-                JTextComponent tc = (JTextComponent) me.getComponent();
-                if (tc.isEnabled() && tc.getComponentPopupMenu() == null) {
-                    ContextActionHandler cah = (ContextActionHandler)
-                            tc.getClientProperty(ContextActionHandler.KEY);
-                    if (cah == null) {
-                        cah = new TextContextActionHandler(tc);
-                        tc.putClientProperty(ContextActionHandler.KEY, cah);
-                    }
-
-                    Map<ContextActionType, JMenuItem> menuItemMap
-                            = TEXT_POPUP_ACTION_MAP.get(tc);
-                    if (menuItemMap == null) {
-                        menuItemMap = new EnumMap<>(ContextActionType.class);
-                        for (ContextActionType type : ContextActionType.values()) {
-                            JMenuItem menuItem = new JMenuItem(type.createAction(tc));
-                            if (type != ContextActionType.UNDO
-                                    && type != ContextActionType.REDO) {
-                                menuItem.addPropertyChangeListener(
-                                        "locale", LOCALE_CHANGE_LISTENER);
-                            }
-                            menuItemMap.put(type, menuItem);
+            if (event instanceof MouseEvent) {
+                MouseEvent me = (MouseEvent) event;
+                if (me.isPopupTrigger()) {
+                    Component c = me.getComponent();
+                    if (c instanceof JComponent && c.isEnabled()) {
+                        final JComponent jc = (JComponent) c;
+                        x = me.getX();
+                        y = me.getY();
+                        if (jc.isFocusOwner()) {
+                            mayShowContextPopupMenu(jc);
+                        } else if (jc.requestFocusInWindow()) {
+                            // Make sure the popup menu is shown only if
+                            // the component has gained focus.
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (jc.isFocusOwner()) {
+                                        mayShowContextPopupMenu(jc);
+                                    }
+                                }
+                            });
                         }
-                        TEXT_POPUP_ACTION_MAP.put(tc, menuItemMap);
                     }
+                }
+            }
+        }
 
-                    boolean editable = tc.isEditable();
-                    boolean hasText = !SwingUtils.getRawText(tc).isEmpty();
-                    boolean hasSelectedText = tc.getSelectedText() != null;
-                    boolean canImport = tc.getTransferHandler().canImport(tc,
-                            Toolkit.getDefaultToolkit().getSystemClipboard()
-                                    .getAvailableDataFlavors());
-                    TEXT_POPUP_MENU.removeAll();
-                    if (editable) {
-                        UndoManager um = cah.getUndoManager();
-                        JMenuItem undoMenuItem = TEXT_POPUP_MENU.add(
-                                menuItemMap.get(ContextActionType.UNDO));
-                        undoMenuItem.setText(um.getUndoPresentationName());
-                        undoMenuItem.setEnabled(um.canUndo());
-                        JMenuItem redoMenuItem = TEXT_POPUP_MENU.add(
-                                menuItemMap.get(ContextActionType.REDO));
-                        redoMenuItem.setText(um.getRedoPresentationName());
-                        redoMenuItem.setEnabled(um.canRedo());
-                        TEXT_POPUP_MENU.addSeparator();
-                        TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.CUT))
-                                .setEnabled(hasSelectedText);
-                    }
-                    TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.COPY))
-                                .setEnabled(hasSelectedText);
-                    if (editable) {
-                        TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.PASTE))
-                                .setEnabled(canImport);
-                        TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.DELETE))
-                                .setEnabled(hasSelectedText);
-                    }
-                    TEXT_POPUP_MENU.addSeparator();
-                    TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.SELECT_ALL))
-                            .setEnabled(hasText);
-                    if (editable) {
-                        TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.CUT_ALL))
-                                .setEnabled(hasText);
-                    }
-                    TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.COPY_ALL))
-                            .setEnabled(hasText);
-                    if (editable) {
-                        TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.REPLACE_ALL))
-                                .setEnabled(canImport);
-                        TEXT_POPUP_MENU.add(menuItemMap.get(ContextActionType.DELETE_ALL))
-                                .setEnabled(hasText);
-                    }
-                    TEXT_POPUP_MENU.revalidate();
-                    TEXT_POPUP_MENU.show(tc, me.getX(), me.getY());
+        private void mayShowContextPopupMenu(JComponent c) {
+            if (c.getComponentPopupMenu() == null) {
+                ContextActionSupport<?> cas = (ContextActionSupport<?>)
+                        c.getClientProperty(ContextActionSupport.CONTEXT_ACTION_SUPPORT);
+                if (cas != null) {
+                    cas.showContextPopupMenu(x, y);
                 }
             }
         }
