@@ -20,7 +20,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Insets;
-import javax.swing.FocusManager;
+import java.awt.KeyboardFocusManager;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
@@ -200,7 +200,8 @@ public class AeroEditorBorder implements Border {
         if (state == null) {
             if (enabled) {
                 boolean focused = false;
-                Component fo = FocusManager.getCurrentManager().getFocusOwner();
+                Component fo = KeyboardFocusManager
+                        .getCurrentKeyboardFocusManager().getFocusOwner();
                 if (fo != null && SwingUtilities.isDescendingFrom(fo, editor)) {
                     focused = true;
                 }
