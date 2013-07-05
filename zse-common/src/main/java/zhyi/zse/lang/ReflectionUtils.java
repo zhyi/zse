@@ -279,19 +279,36 @@ public class ReflectionUtils {
     }
 
     /**
-     * Creates a new instance with the default constructor of the specified class.
+     * Constructs a new instance with the default constructor of the specified
+     * class.
      *
      * @param <T> The type modeled by the class.
      *
      * @param c The class object.
      *
-     * @return A new instance or {@code null}.
+     * @return The constructed new instance.
      *
      * @see Class#newInstance
      */
     public static <T> T newInstance(Class<T> c) {
         try {
             return getDeclaredConstructor(c).newInstance();
+        } catch (ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Constructs a new instance with the specified constructor and parameters.
+     *
+     * @param <T> The class in which the constructor is declared.
+     * @param c The constructor for creating new instance.
+     * @param parameters The parameters for the constructor call. 
+     * @return The constructed new instance.
+     */
+    public static <T> T newInstance(Constructor<T> c, Object... parameters) {
+        try {
+            return c.newInstance(parameters);
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
         }
