@@ -79,10 +79,10 @@ public class AeroEditorBorder implements Border {
 
         JComponent jc = (JComponent) c;
         State state;
-        state = (State) jc.getClientProperty(PropertyKey.STATE);
+        state = (State) jc.getClientProperty(Key.STATE);
         if (state == null) {
             updateState(jc);
-            state = (State) jc.getClientProperty(PropertyKey.STATE);
+            state = (State) jc.getClientProperty(Key.STATE);
         }
 
         int w = width - 1;
@@ -215,8 +215,8 @@ public class AeroEditorBorder implements Border {
             }
         }
 
-        if (state != c.getClientProperty(PropertyKey.STATE)) {
-            c.putClientProperty(PropertyKey.STATE, state);
+        if (state != c.getClientProperty(Key.STATE)) {
+            c.putClientProperty(Key.STATE, state);
             return true;
         }
         return false;
@@ -240,7 +240,7 @@ public class AeroEditorBorder implements Border {
         }
     }
 
-    private static enum PropertyKey {
+    private static enum Key {
         STATE;
     }
 
