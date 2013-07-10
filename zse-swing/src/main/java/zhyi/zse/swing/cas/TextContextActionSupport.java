@@ -16,11 +16,9 @@
  */
 package zhyi.zse.swing.cas;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import javax.swing.undo.UndoManager;
+import zhyi.zse.swing.PropertyKeys;
 
 /**
  * The context action support for text component.
@@ -28,15 +26,13 @@ import javax.swing.undo.UndoManager;
  * @author Zhao Yi
  */
 public class TextContextActionSupport extends ContextActionSupport<JTextComponent> {
-    private static final PropertyChangeListener
-            DOCUMENT_CHANGE_HANDLER = new DocumentChangeHandler();
-
     /**
-     * Constructs a new instance. For {@link TextContextAction#UNDO} and
-     * {@link TextContextAction#UNDO} actions, an {@link UndoManager} is created
-     * automatically, if the "{@code undoManager}" client property is {@code null}.
-     * Any subsequent changes to the "{@code undoManager}" client property and
-     * document are tracked.
+     * Constructs a new instance. To make {@link TextContextAction#UNDO} and
+     * {@link TextContextAction#UNDO} actions work, an {@link UndoManager} must
+     * be added to the document and stored as a client property with the key
+     * {@link PropertyKeys#UNDO_MANAGER}. If the {@link PropertyKeys#UNDO_MANAGER}
+     * client property is {@code null}, an {@link UndoManager} is automatically
+     * created and set up.
      *
      * @param textComponent The text component to be supported.
      */
@@ -44,12 +40,12 @@ public class TextContextActionSupport extends ContextActionSupport<JTextComponen
     public TextContextActionSupport(JTextComponent textComponent) {
         super(textComponent);
 
-        UndoManager um = (UndoManager) textComponent.getClientProperty("undoManager");
+        UndoManager um = (UndoManager) textComponent.getClientProperty(
+                PropertyKeys.UNDO_MANAGER);
         if (um == null) {
             um = new UndoManager();
-            textComponent.putClientProperty("undoManager", um);
+            textComponent.putClientProperty(PropertyKeys.UNDO_MANAGER, um);
             textComponent.getDocument().addUndoableEditListener(um);
-            textComponent.addPropertyChangeListener("document", DOCUMENT_CHANGE_HANDLER);
         }
 
         install(TextContextAction.UNDO, 0);
@@ -63,23 +59,5 @@ public class TextContextActionSupport extends ContextActionSupport<JTextComponen
         install(TextContextAction.COPY_ALL, 2);
         install(TextContextAction.REPLACE_ALL, 2);
         install(TextContextAction.DELETE_ALL, 2);
-    }
-
-    private static class DocumentChangeHandler implements PropertyChangeListener {
-        @Override
-        public void propertyChange(PropertyChangeEvent evt) {
-            switch (evt.getPropertyName()) {
-                case "undoManager":
-                    Document doc = ((JTextComponent) evt.getSource()).getDocument();
-                    doc.removeUndoableEditListener((UndoManager) evt.getOldValue());
-                    doc.addUndoableEditListener((UndoManager) evt.getNewValue());
-                    return;
-                case "document":
-                    UndoManager um = (UndoManager) ((JTextComponent) evt.getSource())
-                            .getClientProperty("undoManager");
-                    ((Document) evt.getOldValue()).removeUndoableEditListener(um);
-                    ((Document) evt.getNewValue()).addUndoableEditListener(um);
-            }
-        }
     }
 }
