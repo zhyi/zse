@@ -29,7 +29,8 @@ import javax.swing.text.JTextComponent;
 import zhyi.zse.lang.ReflectionUtils;
 
 /**
- * This painter makes the background of read-only text components gray.
+ * The improved background painter for text component. Opacity is honored and
+ * read-only text component will by default have a grey background.
  *
  * @author Zhao Yi
  */
@@ -53,8 +54,8 @@ public class NimbusTextBackgroundPainter extends AbstractRegionPainter {
     /**
      * Constructs a new painter.
      *
-     * @param defaultPainter The default painter. Generally it should be one
-     *                       installed by Nimbus Look and Feel.
+     * @param defaultPainter The default background painter for text component.
+     *        Generally it should be one installed by Nimbus Look and Feel.
      */
     public NimbusTextBackgroundPainter(AbstractRegionPainter defaultPainter) {
         this.defaultPainter = defaultPainter;
