@@ -20,8 +20,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.lang.reflect.Method;
+import javax.swing.JComponent;
 import javax.swing.JViewport;
-import javax.swing.Painter;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicTextUI;
 import javax.swing.plaf.nimbus.AbstractRegionPainter;
@@ -33,18 +33,21 @@ import zhyi.zse.lang.ReflectionUtils;
  *
  * @author Zhao Yi
  */
-public class NimbusTextBackgroundPainter implements Painter<JTextComponent> {
-    private static final Method DECODE_X = ReflectionUtils.getDeclaredMethod(
-            AbstractRegionPainter.class, "decodeX", float.class);
-    private static final Method DECODE_Y = ReflectionUtils.getDeclaredMethod(
-            AbstractRegionPainter.class, "decodeY", float.class);
-    private static final Method DECODE_COLOR = ReflectionUtils.getDeclaredMethod(
-            AbstractRegionPainter.class, "decodeColor",
-            String.class, float.class, float.class, float.class, int.class);
-    private static final Method GET_PROPERTY_PREFIX
-            = ReflectionUtils.getDeclaredMethod(BasicTextUI.class, "getPropertyPrefix");
+public class NimbusTextBackgroundPainter extends AbstractRegionPainter {
+    private static final Method GET_EXTENDED_CACHE_KEYS = ReflectionUtils.getDeclaredMethod(
+            AbstractRegionPainter.class, "getExtendedCacheKeys", JComponent.class);
+    private static final Method CONFIGURE_GRAPHICS = ReflectionUtils.getDeclaredMethod(
+            AbstractRegionPainter.class, "configureGraphics", Graphics2D.class);
+    private static final Method GET_PAINT_CONTEXT = ReflectionUtils.getDeclaredMethod(
+            AbstractRegionPainter.class, "getPaintContext");
+    private static final Method DO_PAINT = ReflectionUtils.getDeclaredMethod(
+            AbstractRegionPainter.class, "doPaint", Graphics2D.class,
+            JComponent.class, int.class, int.class, Object[].class);
+    private static final Method GET_PROPERTY_PREFIX = ReflectionUtils.getDeclaredMethod(
+            BasicTextUI.class, "getPropertyPrefix");
 
     private AbstractRegionPainter defaultPainter;
+    private Color inactiveBackground;
     private Rectangle2D.Float rec;
 
     /**
@@ -55,23 +58,45 @@ public class NimbusTextBackgroundPainter implements Painter<JTextComponent> {
      */
     public NimbusTextBackgroundPainter(AbstractRegionPainter defaultPainter) {
         this.defaultPainter = defaultPainter;
+        inactiveBackground = decodeColor("nimbusBlueGrey",
+                -0.015872955F, -0.07995863F, 0.15294117F, 0);
         rec = new Rectangle2D.Float();
     }
 
     @Override
-    public void paint(Graphics2D g, JTextComponent tc, int width, int height) {
-        defaultPainter.paint(g, tc, width, height);
-        if (!tc.isEditable() && tc.getBackground().equals(
-                UIManager.getColor(getPropertyPrefix(tc) + ".background"))) {
-            // If the text component is not editable, and the background is
-            // not explicitly set, repaint the background. Note that in Nimbus
-            // L&F, isBackgroundSet() always returns true so it's unreliable.
-            // Since getBackground() always returns the a fake derived color,
-            // we can check for that color to determine whether the color has
-            // been explicitly set or not. Though this check is imperfect but
-            // it should have covered most cases.
-            g.setPaint(decodeColor("nimbusBlueGrey",
-                    -0.015872955F, -0.07995863F, 0.15294117F, 0));
+    protected Object[] getExtendedCacheKeys(JComponent c) {
+        return (Object[]) ReflectionUtils.invoke(
+                GET_EXTENDED_CACHE_KEYS, defaultPainter, c);
+    }
+
+    @Override
+    protected void configureGraphics(Graphics2D g) {
+        ReflectionUtils.invoke(CONFIGURE_GRAPHICS, defaultPainter, g);
+    }
+
+    @Override
+    protected PaintContext getPaintContext() {
+        return (PaintContext) ReflectionUtils.invoke(
+                GET_PAINT_CONTEXT, defaultPainter);
+    }
+
+    @Override
+    protected void doPaint(Graphics2D g, JComponent c,
+            int width, int height, Object[] extendedCacheKeys) {
+        if (!c.isOpaque()) {
+            return;
+        }
+
+        JTextComponent tc = (JTextComponent) c;
+        if (tc.isEnabled() && !tc.isEditable() && tc.getBackground().equals(UIManager.getColor(
+                ReflectionUtils.invoke(GET_PROPERTY_PREFIX, tc.getUI()) + ".background"))) {
+            // If the text component is not editable, and the background is not
+            // explicitly set, paint the background with inactiveBackground.
+            // In Nimbus L&F, getBackground() always returns the a fake derived
+            // color, we can check that color to determine whether the background
+            // has been changed by the developer or not. This check is imperfect
+            // but should have covered most cases.
+            g.setPaint(inactiveBackground);
             if (tc.getParent() instanceof JViewport) {
                 rec.setRect(decodeX(0.0F), decodeY(0.0F),
                         decodeX(3.0F) - decodeX(0.0F),
@@ -82,24 +107,9 @@ public class NimbusTextBackgroundPainter implements Painter<JTextComponent> {
                         decodeY(2.6F) - decodeY(0.4F));
             }
             g.fill(rec);
+        } else {
+            ReflectionUtils.invoke(DO_PAINT, defaultPainter,
+                    g, c, width, height, extendedCacheKeys);
         }
-    }
-
-    private String getPropertyPrefix(JTextComponent tc) {
-        return (String) ReflectionUtils.invoke(GET_PROPERTY_PREFIX, tc.getUI());
-    }
-
-    private Color decodeColor(String key, float hOffset,
-            float sOffset, float bOffset, int aOffset) {
-        return (Color) ReflectionUtils.invoke(DECODE_COLOR, defaultPainter,
-                key, hOffset, sOffset, bOffset, aOffset);
-    }
-
-    private float decodeX(float x) {
-        return (float) ReflectionUtils.invoke(DECODE_X, defaultPainter, x);
-    }
-
-    private float decodeY(float y) {
-        return (float) ReflectionUtils.invoke(DECODE_Y, defaultPainter, y);
     }
 }
