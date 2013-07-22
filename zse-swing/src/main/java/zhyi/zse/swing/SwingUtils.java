@@ -21,16 +21,22 @@ import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ContainerEvent;
 import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Locale;
 import javax.swing.AbstractButton;
@@ -41,6 +47,7 @@ import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 import javax.swing.LayoutStyle;
@@ -50,23 +57,39 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.plaf.BorderUIResource.EmptyBorderUIResource;
+import javax.swing.plaf.TableHeaderUI;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.plaf.basic.BasicTableHeaderUI;
+import javax.swing.plaf.basic.BasicTableHeaderUI.MouseInputHandler;
 import javax.swing.plaf.basic.BasicTextUI;
-import javax.swing.plaf.metal.MetalLookAndFeel;
-import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.plaf.nimbus.AbstractRegionPainter;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.View;
+import zhyi.zse.lang.BeanUtils;
 import zhyi.zse.lang.ExceptionUtils;
 import zhyi.zse.lang.ReflectionUtils;
-import zhyi.zse.swing.AeroEditorBorder.AeroEditorBorderUIResource;
-import zhyi.zse.swing.AeroToolTipBorder.AeroToolTipBorderUIResource;
 import zhyi.zse.swing.cas.ContextActionSupport;
-import zhyi.zse.swing.cas.TextContextActionSupport;
+import zhyi.zse.swing.cas.TableHeaderContextActionSupport;
+import zhyi.zse.swing.cas.TextComponentContextActionSupport;
 import zhyi.zse.swing.plaf.AeroComboBoxUI;
+import zhyi.zse.swing.plaf.AeroEditorBorder;
+import zhyi.zse.swing.plaf.AeroEditorBorder.AeroEditorBorderUIResource;
 import zhyi.zse.swing.plaf.AeroScrollPaneBorder;
+import zhyi.zse.swing.plaf.AeroToolTipBorder.AeroToolTipBorderUIResource;
 import zhyi.zse.swing.plaf.AeroToolTipUI;
 import zhyi.zse.swing.plaf.NimbusTextBackgroundPainter;
 
@@ -78,10 +101,14 @@ import zhyi.zse.swing.plaf.NimbusTextBackgroundPainter;
 public final class SwingUtils {
     private static final AWTEventListener CONTAINER_HANDLER = new ContainerHandler();
     private static final AWTEventListener AERO_EDITOR_BORDER_HANDLER = new AeroEditorBorderHandler();
-    private static final PopupFactory SHADOW_POPUP_FACTORY = new ShadowPopupFactory();
     private static final AWTEventListener CONTEXT_POPUP_HANDLER = new ContextPopupHandler();
+    private static final PropertyChangeListener TEXT_BACKGROUND_HANDLER = new TextBackgroundHandler();
+    private static final PopupFactory SHADOW_POPUP_FACTORY = new ShadowPopupFactory();
     private static final Method GET_PROPERTY_PREFIX
             = ReflectionUtils.getDeclaredMethod(BasicTextUI.class, "getPropertyPrefix");
+    private static final Method GET_HEADER_RENDERER
+            = ReflectionUtils.getDeclaredMethod(
+                    BasicTableHeaderUI.class, "getHeaderRenderer", int.class);
 
     private static boolean containerMonitored;
     private static boolean lafMonitored;
@@ -279,37 +306,55 @@ public final class SwingUtils {
      * The change takes immediate effect. Additionally, the following fixes and
      * enhancements to the UI are applied:
      * <p>
-     * <b>Default Popup Menus</b>
+     * <b>Context Action Support</b>
      * <p>
-     * Any component that is installed with a client property with the key as
-     * {@link ContextActionSupport#CONTEXT_ACTION_SUPPORT} and the value as
-     * an instance of {@link ContextActionSupport} will have a default popup menu.
-     * Specially, text components are automatically installed with such client
-     * properties.
+     * Any component can store a {@link PropertyKeys#CONTEXT_ACTION_SUPPORT}
+     * client property to have context action support, and bring up context
+     * popup menu by right-clicking if the component popup menu is not set.
+     * Specially, text component, table header and link will be installed with
+     * this support by default when being added to container and no such client
+     * property is present.
      * <p>
-     * <b>Fixes for Common Look And Feel Issues</b>
+     * <b>Enhancements for Table</b>
      * <ul>
-     * <li>The distance of indent in group layout is too small.
-     * <li>Drop shadows are missing for popup components.
-     * <li>Read-only text components have wrong cursors.
-     * <li>Display properties are not honored by editor panes.
+     * <li>Table row heights are automatically fit if the table's
+     * {@link PropertyKeys#AUTO_FIT_ROW_HEIGHTS} is set to {@link Boolean#TRUE}.
+     * This property is turned on by default when it is added to a container
+     * and no such client property is present.
+     * <li>If a table cell renderer component's {@link PropertyKeys#REAL_CELL_COMPONENT}
+     * is set to {@link Boolean#TRUE}, it will be added to the table as a real
+     * component instead of a static painter. To simplify the implementation,
+     * a table can have at most two real renderer components (one currently active
+     * and the other last focused) at the same time. If there are lots of cells
+     * needing to repaint itself from time to time, stick to the static renderer
+     * and update the corresponding table cell rectangle on demand.
+     * <li>Table column can be resized to fit by double clicking table header's
+     * separator.
      * </ul>
-     * <b>Fixes for Windows Aero Look And Feel Issues</b>
+     * <b>Common Fixes and Enhancements</b>
      * <ul>
-     * <li>Text components, editable combo boxes, spinners and scroll panes have
-     * wrong borders.
-     * <li>Read-only combo boxes have extra borders and are insufficiently
-     * padded.
-     * <li>Menu bar menus are insufficiently padded.
-     * <li>Some read-only or disabled text components have wrong default
-     * background colors.
-     * <li>Text components, editable combo boxes and spinners have wrong borders.
-     * <li>Tool tips have wrong UIs.
+     * <li>The distance of indent in group layout is enlarged.
+     * <li>Drop shadow is shown for popup components.
+     * <li>Text component will always have text cursor.
+     * <li>Turn on {@link JEditorPane#HONOR_DISPLAY_PROPERTIES} when editor pane
+     * is added to container and no such client property is present.
      * </ul>
-     * <b>Fixes for Nimbus Look And Feel Issues</b>
+     * <b>Fixes and Enhancements for Windows Aero Look And Feel</b>
      * <ul>
-     * <li>Background color and opacity are not honored by some text components.
-     * <li>Some read-only text components have wrong default background colors.
+     * <li>Aero styled {@link AeroEditorBorder} is set to single-line text
+     * component, multi-line text component's enclosing scroll pane, editable
+     * combo box, spinner by default. For custom editor, it can have a client
+     * property {@link PropertyKeys#AERO_EDITOR} set to {@link Boolean#TRUE}
+     * to make its (or its enclosing scroll pane's) {@link AeroEditorBorder}
+     * have highlight effect.
+     * <li>Removed the extra border for read-only combo box and tuned the padding.
+     * <li>Tuned the padding for menu in menu bar.
+     * <li>Fixed background color for some read-only or disabled text component.
+     * <li>Aero styled {@link AeroToolTipUI} is set to tool tip.
+     * </ul>
+     * <b>Fixes and Enhancements for Nimbus Look And Feel</b>
+     * <ul>
+     * <li>Tuned the painter for painting text component's background.
      * </ul>
      *
      * @param lookAndFeel The new look and feel to be applied.
@@ -325,8 +370,18 @@ public final class SwingUtils {
 
     private static void applyLookAndFeel() {
         fixUiIssues();
+        final LookAndFeel laf = UIManager.getLookAndFeel();
         for (Window w : Window.getWindows()) {
-            SwingUtilities.updateComponentTreeUI(w);
+            updateComponentTree(w, new ComponentUpdater() {
+                @Override
+                public void update(Component component) {
+                    if (component instanceof JComponent) {
+                        JComponent jc = (JComponent) component;
+                        jc.updateUI();
+                        jc.putClientProperty(Key.LOOK_AND_FEEL, laf);
+                    }
+                }
+            });
         }
         lafMonitored = true;
         monitorContainers();
@@ -341,7 +396,7 @@ public final class SwingUtils {
             shadowPopupEnabled = true;
         }
 
-        // Add default popup menus for text components.
+        // Show default popup menus for components that have context actions.
         if (!casPopupEnabled) {
             tk.addAWTEventListener(CONTEXT_POPUP_HANDLER, AWTEvent.MOUSE_EVENT_MASK);
             casPopupEnabled = true;
@@ -422,41 +477,45 @@ public final class SwingUtils {
      *
      * @param locale The new locale to be applied.
      */
-    public static void switchLocale(Locale locale) {
+    public static void switchLocale(final Locale locale) {
         Locale.setDefault(locale);
         JComponent.setDefaultLocale(locale);
         UIManager.getDefaults().setDefaultLocale(locale);
         UIManager.getLookAndFeelDefaults().setDefaultLocale(locale);
-        ComponentOrientation o = ComponentOrientation.getOrientation(locale);
-        for (Window w :Window.getWindows()) {
-            setComponentTreeLocale(w, locale, o);
+        final ComponentOrientation o = ComponentOrientation.getOrientation(locale);
+        for (Window w : Window.getWindows()) {
+            updateComponentTree(w, new ComponentUpdater() {
+                @Override
+                public void update(Component component) {
+                    component.setLocale(locale);
+                    component.setComponentOrientation(o);
+                }
+            });
         }
         localeMonitored = true;
         monitorContainers();
     }
 
-    private static void setComponentTreeLocale(
-            Component c, Locale l, ComponentOrientation o) {
-        c.setLocale(l);
-        c.setComponentOrientation(o);
+    public static void updateComponentTree(
+            Component root, ComponentUpdater updater) {
+        updater.update(root);
 
-        if (c instanceof JComponent) {
-            JPopupMenu popupMenu = ((JComponent) c).getComponentPopupMenu();
+        if (root instanceof JComponent) {
+            JPopupMenu popupMenu = ((JComponent) root).getComponentPopupMenu();
             if (popupMenu != null) {
-                setComponentTreeLocale(popupMenu, l, o);
+                updateComponentTree(popupMenu, updater);
             }
         }
 
         Component[] children = null;
-        if (c instanceof JMenu) {
-            children = ((JMenu) c).getMenuComponents();
-        }
-        if (c instanceof Container) {
-            children = ((Container) c).getComponents();
+        if (root instanceof JMenu) {
+            children = ((JMenu) root).getMenuComponents();
+        } else if (root instanceof Container) {
+            children = ((Container) root).getComponents();
         }
         if (children != null) {
             for (Component child : children) {
-                setComponentTreeLocale(child, l, o);
+                updateComponentTree(child, updater);
             }
         }
     }
@@ -469,12 +528,210 @@ public final class SwingUtils {
         }
     }
 
-    private static class ContainerHandler implements AWTEventListener {
-        private static final Field UI
-                = ReflectionUtils.getDeclaredField(JComponent.class, "ui");
-        private static final PropertyChangeListener TEXT_BACKGROUND_MONITOR
-                = new TextBackgroundHandler();
+    /**
+     * Makes a component that own a view to have a fixed size along one axis,
+     * and the preferred size along the other. Text components and components
+     * that has a {@link BasicHTML#propertyKey} client property are recognized
+     * as view owners. If the component does not own a view, no action will be
+     * taken.
+     *
+     * @param component The component to be resized.
+     * @param size The size to be fixed along the axis.
+     * @param axis The axis along which the size is to be fixed.
+     */
+    public static void fitView(JComponent component, int size, int axis) {
+        View view = (View) component.getClientProperty(BasicHTML.propertyKey);
+        if (view == null && component instanceof JTextComponent) {
+            view = ((JTextComponent) component).getUI()
+                    .getRootView((JTextComponent) component);
+        }
+        if (view != null) {
+            fitView(component, view, size, axis);
+        }
+    }
 
+    /**
+     * Makes a component that own a view to have a fixed size along one axis, and
+     * the preferred size along the other.
+     *
+     * @param component The component to be resized.
+     * @param view The view owned by the component.
+     * @param size The size to be fixed along the axis.
+     * @param axis The axis along which the size is to be fixed.
+     */
+    public static void fitView(JComponent component, View view, int size, int axis) {
+        if (axis != View.X_AXIS && axis != View.Y_AXIS) {
+            throw new IllegalArgumentException("Invalid axis " + axis + ".");
+        }
+
+        Insets insets = component.getInsets();
+        if (axis == View.X_AXIS) {
+            int width = size - insets.left - insets.right;
+            view.setSize(width, 0);
+            int height = (int) Math.ceil(view.getPreferredSpan(View.Y_AXIS)
+                    + insets.top + insets.bottom);
+            view.setSize(width, height);
+            component.setPreferredSize(new Dimension(size, height));
+        } else {
+            int height = size - insets.top - insets.bottom;
+            view.setSize(0, height);
+            int width = (int) Math.ceil(view.getPreferredSpan(View.X_AXIS))
+                    + insets.left + insets.right;
+            view.setSize(width, height);
+            component.setPreferredSize(new Dimension(width, size));
+        }
+    }
+
+    /**
+     * Resizes the specified table row to fit contents. {@link JTable#getRowHeight}
+     * is used as the minimum row height.
+     *
+     * @param table The table of which the specified row is to be resized.
+     * @param row The row to be resized.
+     */
+    public static void fitRowHeight(JTable table, int row) {
+        int rowHeight = table.getRowHeight();
+        int columnCount = table.getColumnCount();
+        for (int column = 0; column < columnCount; column++) {
+            rowHeight = Math.max(rowHeight,
+                    getPreferredCellSize(table, row, column,
+                            table.getColumnModel().getColumn(column).getWidth(),
+                            View.X_AXIS).height);
+        }
+        if (rowHeight != table.getRowHeight(row)) {
+            table.setRowHeight(row, rowHeight);
+        }
+    }
+
+    /**
+     * Resizes all table rows to fit contents. {@link JTable#getRowHeight}
+     * is used as the minimum row height.
+     *
+     * @param table The table of which all rows are to be resized.
+     */
+    public static void fitAllRowHeights(JTable table) {
+        int rowCount = table.getRowCount();
+        for (int row = 0; row < rowCount; row++) {
+            fitRowHeight(table, row);
+        }
+    }
+
+    /**
+     * Resizes the specified table column to fit contents.
+     * {@link TableColumn#getMinWidth} is used as the minimum column width.
+     * If resizing is not allowed, no action will be taken. Note that the result
+     * is affected by the table's {@link JTable#getAutoResizeMode auto resize model}.
+     *
+     * @param table The table of which the specified column is to be resized.
+     * @param column The column to be resized.
+     */
+    public static void fitColumnWidth(JTable table, int column) {
+        TableColumn tableColumn = table.getColumnModel().getColumn(column);
+        JTableHeader tableHeader = table.getTableHeader();
+
+        if (!table.isEnabled() || !tableColumn.getResizable()
+                || tableHeader != null && !tableHeader.isEnabled()
+                || tableHeader != null && !tableHeader.getResizingAllowed()) {
+            return;
+        }
+
+        int columnWidth = tableColumn.getMinWidth();
+        int rowCount = table.getRowCount();
+        for (int row = 0; row < rowCount; row++) {
+            columnWidth = Math.max(columnWidth, getPreferredCellSize(table,
+                    row, column, table.getRowHeight(row), View.Y_AXIS).width);
+        }
+
+        if (tableHeader != null) {
+            TableHeaderUI headerUi = tableHeader.getUI();
+            Component headerComponent;
+            if (headerUi instanceof BasicTableHeaderUI) {
+                headerComponent = (Component) ReflectionUtils.invoke(
+                        GET_HEADER_RENDERER, tableHeader.getUI(), column);
+            } else {
+                TableCellRenderer headerRenderer = tableColumn.getHeaderRenderer();
+                if (headerRenderer == null) {
+                    headerRenderer = tableHeader.getDefaultRenderer();
+                }
+                headerComponent = headerRenderer.getTableCellRendererComponent(
+                        table, tableColumn.getHeaderValue(), false, false, -1, column);
+            }
+            columnWidth = Math.max(columnWidth, headerComponent.getPreferredSize().width);
+        }
+
+        if (columnWidth != tableColumn.getPreferredWidth()) {
+            tableColumn.setPreferredWidth(columnWidth);
+        }
+    }
+
+    /**
+     * Resizes all table columns to fit contents. {@link TableColumn#getMinWidth}
+     * is used as the minimum column width. Only resizable column is resized,
+     * and the result is affected by the table's {@link JTable#getAutoResizeMode
+     * auto resize model}.
+     *
+     * @param table The table of which all columns are to be resized.
+     */
+    public static void fitAllColumnWidth(JTable table) {
+        int columnCount = table.getColumnCount();
+        for (int column = 0; column < columnCount; column++) {
+            fitColumnWidth(table, column);
+        }
+    }
+
+    private static Dimension getPreferredCellSize(
+            JTable table, int row, int column, int size, int axis) {
+        if (row == table.getEditingRow() && column == table.getEditingColumn()) {
+            return table.getEditorComponent().getPreferredSize();
+        } else {
+            Component renderer = table.prepareRenderer(
+                    table.getCellRenderer(row, column), row, column);
+            renderer.setPreferredSize(null);
+            if (renderer instanceof JComponent) {
+                fitView((JComponent) renderer, size, axis);
+            }
+            return renderer.getPreferredSize();
+        }
+    }
+
+    private static void removeRealCell(JTable table, Key type) {
+        JComponent realCell = (JComponent) table.getClientProperty(type);
+        if (realCell != null) {
+            if (realCell.getParent() == table) {
+                realCell.removeFocusListener((FocusListener)
+                        realCell.getClientProperty(Key.TABLE_CELL_FOCUS_LISTENER));
+                realCell.putClientProperty(Key.TABLE_CELL_FOCUS_LISTENER, null);
+                Rectangle bounds = realCell.getBounds();
+                table.remove(realCell);
+                table.repaint(bounds);
+            }
+            table.putClientProperty(type, null);
+        }
+    }
+
+    private static void removeAllRealCells(JTable table) {
+        removeRealCell(table, Key.ACTIVE_TABLE_CELL);
+        removeRealCell(table, Key.FOCUSED_TABLE_CELL);
+    }
+
+    private static int getResizingColumn(JTableHeader tableHeader, Point location) {
+        int column = tableHeader.columnAtPoint(location);
+        Rectangle rect = tableHeader.getHeaderRect(column);
+        rect.grow(-3, 0);
+        if (rect.contains(location)) {
+            return -1;
+        }
+
+        int middle = rect.x + rect.width / 2;
+        if (tableHeader.getComponentOrientation().isLeftToRight()) {
+            column = (location.x < middle) ? column - 1 : column;
+        } else {
+            column = (location.x < middle) ? column : column - 1;
+        }
+        return column;
+    }
+
+    private static class ContainerHandler implements AWTEventListener {
         @Override
         public void eventDispatched(AWTEvent event) {
             ContainerEvent ce = (ContainerEvent) event;
@@ -493,14 +750,12 @@ public final class SwingUtils {
                     // Fix the background colors of some text components.
                     if (tc instanceof JTextArea || tc instanceof JEditorPane
                             || tc instanceof JTextPane) {
-                        Boolean monitored = (Boolean) tc.getClientProperty(
-                                PropertyKey.TEXT_BACKGROUND_MONITORED);
-                        if (monitored == null) {
-                            tc.addPropertyChangeListener(TEXT_BACKGROUND_MONITOR);
-                            TEXT_BACKGROUND_MONITOR.propertyChange(
+                        if (tc.getClientProperty(Key.TEXT_BACKGROUND_MONITORED) == null) {
+                            tc.addPropertyChangeListener("enabled", TEXT_BACKGROUND_HANDLER);
+                            tc.addPropertyChangeListener("editable", TEXT_BACKGROUND_HANDLER);
+                            TEXT_BACKGROUND_HANDLER.propertyChange(
                                     new PropertyChangeEvent(tc, "enabled", null, null));
-                            tc.putClientProperty(
-                                    PropertyKey.TEXT_BACKGROUND_MONITORED, Boolean.TRUE);
+                            tc.putClientProperty(Key.TEXT_BACKGROUND_MONITORED, Boolean.TRUE);
                         }
                     }
 
@@ -515,28 +770,70 @@ public final class SwingUtils {
                     }
 
                     // Add default context action support.
-                    if (tc.getClientProperty(ContextActionSupport.CONTEXT_ACTION_SUPPORT) == null) {
+                    if (tc.getClientProperty(
+                            PropertyKeys.CONTEXT_ACTION_SUPPORT) == null) {
                         tc.putClientProperty(
-                                ContextActionSupport.CONTEXT_ACTION_SUPPORT,
-                                new TextContextActionSupport(tc));
+                                PropertyKeys.CONTEXT_ACTION_SUPPORT,
+                                new TextComponentContextActionSupport(tc));
+                    }
+                }
+
+                // Fix and enhance tables.
+                if (c instanceof JTable) {
+                    JTable table = (JTable) c;
+                    if (table.getClientProperty(Key.TABLE_MONITORED) == null) {
+                        table.putClientProperty(Key.TABLE_MONITORED, Boolean.TRUE);
+
+                        if (table.getClientProperty(
+                                PropertyKeys.AUTO_FIT_ROW_HEIGHTS) == null) {
+                            table.putClientProperty(
+                                    PropertyKeys.AUTO_FIT_ROW_HEIGHTS, Boolean.TRUE);
+                        }
+
+                        TableHandler tableHandler = new TableHandler(table);
+                        table.addPropertyChangeListener("UI", tableHandler);
+                        table.addMouseMotionListener(tableHandler);
+                        BeanUtils.keepListener(table, "model",
+                                TableModelListener.class, tableHandler);
+                        BeanUtils.keepListener(table, "selectionModel",
+                                ListSelectionListener.class, tableHandler);
+                        BeanUtils.keepListener(table, "columnModel",
+                                TableColumnModelListener.class, tableHandler);
+                    }
+                }
+
+                // Fix and enhance table headers.
+                if (c instanceof JTableHeader) {
+                    JTableHeader tableHeader = (JTableHeader) c;
+                    if (tableHeader.getClientProperty(
+                            PropertyKeys.CONTEXT_ACTION_SUPPORT) == null) {
+                        tableHeader.putClientProperty(
+                                PropertyKeys.CONTEXT_ACTION_SUPPORT,
+                                new TableHeaderContextActionSupport(tableHeader));
+                    }
+                    if (tableHeader.getClientProperty(
+                            Key.TABLE_HEADER_MONITORED) == null) {
+                        tableHeader.putClientProperty(
+                                Key.TABLE_HEADER_MONITORED, Boolean.TRUE);
+
+                        TableHeaderHandler tableHeaderHandler
+                                = new TableHeaderHandler(tableHeader);
+                        tableHeader.addMouseListener(tableHeaderHandler);
+                        tableHeader.addPropertyChangeListener(
+                                "UI", tableHeaderHandler);
                     }
                 }
 
                 // Update L&F as needed.
                 if (lafMonitored && c instanceof JComponent) {
                     JComponent jc = (JComponent) c;
-                    Object ui = ReflectionUtils.getValue(UI, jc);
-                    if (ui != null) {
-                        if (!ui.getClass().equals(
-                                UIManager.getDefaults().getUIClass(jc.getUIClassID()))) {
-                            jc.updateUI();
-                        } else if (UIManager.getLookAndFeel().getName().equals("Metal")) {
-                            MetalTheme mt = MetalLookAndFeel.getCurrentTheme();
-                            if (!jc.getClientProperty(PropertyKey.METAL_THEME).equals(mt)) {
-                                jc.updateUI();
-                                jc.putClientProperty(PropertyKey.METAL_THEME, mt);
-                            }
-                        }
+                    LookAndFeel laf = UIManager.getLookAndFeel();
+                    if (jc.getClientProperty(Key.LOOK_AND_FEEL) != laf) {
+                        // The UI may be updated twice, but there's no other way
+                        // to check whether the UI is created by the current
+                        // Look And Feel.
+                        jc.updateUI();
+                        jc.putClientProperty(Key.LOOK_AND_FEEL, laf);
                     }
                 }
 
@@ -606,28 +903,26 @@ public final class SwingUtils {
 
         @Override
         public void eventDispatched(AWTEvent event) {
-            if (event instanceof MouseEvent) {
-                MouseEvent me = (MouseEvent) event;
-                if (me.isPopupTrigger()) {
-                    Component c = me.getComponent();
-                    if (c instanceof JComponent && c.isEnabled()) {
-                        final JComponent jc = (JComponent) c;
-                        x = me.getX();
-                        y = me.getY();
-                        if (jc.isFocusOwner()) {
-                            mayShowContextPopupMenu(jc);
-                        } else if (jc.requestFocusInWindow()) {
-                            // Make sure the popup menu is shown only if
-                            // the component has gained focus.
-                            SwingUtilities.invokeLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (jc.isFocusOwner()) {
-                                        mayShowContextPopupMenu(jc);
-                                    }
+            MouseEvent me = (MouseEvent) event;
+            if (me.isPopupTrigger()) {
+                Component c = me.getComponent();
+                if (c instanceof JComponent && c.isEnabled()) {
+                    final JComponent jc = (JComponent) c;
+                    x = me.getX();
+                    y = me.getY();
+                    if (jc.isFocusOwner()) {
+                        mayShowContextPopupMenu(jc);
+                    } else if (jc.requestFocusInWindow()) {
+                        // Make sure the popup menu is shown only if
+                        // the component has gained focus.
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (jc.isFocusOwner()) {
+                                    mayShowContextPopupMenu(jc);
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
                 }
             }
@@ -636,7 +931,7 @@ public final class SwingUtils {
         private void mayShowContextPopupMenu(JComponent c) {
             if (c.getComponentPopupMenu() == null) {
                 ContextActionSupport<?> cas = (ContextActionSupport<?>)
-                        c.getClientProperty(ContextActionSupport.CONTEXT_ACTION_SUPPORT);
+                        c.getClientProperty(PropertyKeys.CONTEXT_ACTION_SUPPORT);
                 if (cas != null) {
                     cas.showContextPopupMenu(x, y);
                 }
@@ -647,26 +942,248 @@ public final class SwingUtils {
     private static class TextBackgroundHandler implements PropertyChangeListener {
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
-            String name = evt.getPropertyName();
-            if (name.equals("enabled") || name.equals("editable")) {
-                JTextComponent tc = (JTextComponent) evt.getSource();
-                if (!tc.isBackgroundSet()
-                        || tc.getBackground() instanceof UIResource) {
-                    if (tc.isEnabled()) {
-                        String prefix = (String) ReflectionUtils.invoke(
-                                GET_PROPERTY_PREFIX, tc.getUI());
-                        tc.setBackground(tc.isEditable()
-                                ? UIManager.getColor(prefix + ".background")
-                                : UIManager.getColor(prefix + ".inactiveBackground"));
-                    } else if (tc instanceof JTextArea) {
-                        tc.setBackground(UIManager.getColor("TextArea.disabledBackground"));
-                    }
+            JTextComponent tc = (JTextComponent) evt.getSource();
+            if (!tc.isBackgroundSet()
+                    || tc.getBackground() instanceof UIResource) {
+                if (tc.isEnabled()) {
+                    String prefix = (String) ReflectionUtils.invoke(
+                            GET_PROPERTY_PREFIX, tc.getUI());
+                    tc.setBackground(tc.isEditable()
+                            ? UIManager.getColor(prefix + ".background")
+                            : UIManager.getColor(prefix + ".inactiveBackground"));
+                } else if (tc instanceof JTextArea) {
+                    tc.setBackground(UIManager.getColor("TextArea.disabledBackground"));
                 }
             }
         }
     }
 
-    private static enum PropertyKey {
-        METAL_THEME, TEXT_BACKGROUND_MONITORED;
+    private static class TableHandler extends MouseAdapter
+            implements TableModelListener, ListSelectionListener,
+                       TableColumnModelListener, PropertyChangeListener {
+        private JTable table;
+
+        private TableHandler(JTable table) {
+            this.table = table;
+            fitRowHeights();
+        }
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            JComponent activeCell = (JComponent)
+                    table.getClientProperty(Key.ACTIVE_TABLE_CELL);
+            JComponent focusedCell = (JComponent)
+                    table.getClientProperty(Key.FOCUSED_TABLE_CELL);
+
+            if (activeCell != null && activeCell != focusedCell) {
+                removeRealCell(table, Key.ACTIVE_TABLE_CELL);
+            }
+
+            Point p = e.getPoint();
+            int row = table.rowAtPoint(p);
+            int column = table.columnAtPoint(p);
+            if (row != -1 && column != -1) {
+                Component cell = table.prepareRenderer(
+                        table.getCellRenderer(row, column), row, column);
+                if (cell instanceof JComponent && Boolean.TRUE.equals(
+                        ((JComponent) cell).getClientProperty(PropertyKeys.REAL_CELL_COMPONENT))) {
+                    FocusListener focusHandler = new TableCellFocusHandler(table);
+                    cell.addFocusListener(focusHandler);
+                    ((JComponent) cell).putClientProperty(
+                            Key.TABLE_CELL_FOCUS_LISTENER, focusHandler);
+                    table.add(cell);
+                    table.putClientProperty(Key.ACTIVE_TABLE_CELL, cell);
+                    cell.setBounds(table.getCellRect(row, column, false));
+                }
+            }
+        }
+
+        @Override
+        public void tableChanged(TableModelEvent e) {
+            // JTable's implementation doesn't remove the cell editor on table
+            // model change, which may result in runtime expections.
+            if (table.isEditing()) {
+                table.removeEditor();
+            }
+            removeAllRealCells(table);
+            if (isAutoFitRowHeights()) {
+                if (e.getFirstRow() == TableModelEvent.HEADER_ROW) {
+                    fitAllRowHeights(table);
+                } else {
+                    for (int row = e.getFirstRow(); row <= e.getLastRow(); row++) {
+                        fitRowHeight(table, row);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void valueChanged(ListSelectionEvent e) {
+            if (isAutoFitRowHeights() && e.getValueIsAdjusting()) {
+                fitRowHeight(table, e.getFirstIndex());
+                if (e.getFirstIndex() != e.getLastIndex()) {
+                    fitRowHeight(table, e.getLastIndex());
+                }
+            }
+        }
+
+        @Override
+        public void columnAdded(TableColumnModelEvent e) {
+            fitRowHeights();
+        }
+
+        @Override
+        public void columnRemoved(TableColumnModelEvent e) {
+            fitRowHeights();
+        }
+
+        @Override
+        public void columnMoved(TableColumnModelEvent e) {
+            fitRowHeights();
+        }
+
+        @Override
+        public void columnMarginChanged(ChangeEvent e) {
+            fitRowHeights();
+        }
+
+        @Override
+        public void columnSelectionChanged(ListSelectionEvent e) {
+            if (isAutoFitRowHeights() && e.getValueIsAdjusting()) {
+                if (table.getColumnSelectionAllowed()
+                        && !table.getRowSelectionAllowed()) {
+                    fitAllRowHeights(table);
+                } else {
+                    int focusedRow = table.getSelectionModel().getLeadSelectionIndex();
+                    if (focusedRow != -1) {
+                        fitRowHeight(table, focusedRow);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            // UI has changed.
+            TableCellEditor editor = table.getCellEditor();
+            if (editor != null && !editor.stopCellEditing()) {
+                editor.cancelCellEditing();
+            }
+            removeAllRealCells(table);
+        }
+
+        private void fitRowHeights() {
+            removeAllRealCells(table);
+            if (isAutoFitRowHeights()) {
+                fitAllRowHeights(table);
+            }
+        }
+
+        private boolean isAutoFitRowHeights() {
+            return Boolean.TRUE.equals(table.getClientProperty(
+                    PropertyKeys.AUTO_FIT_ROW_HEIGHTS));
+        }
+    }
+
+    private static class TableCellFocusHandler implements FocusListener {
+        private JTable table;
+
+        private TableCellFocusHandler(JTable table) {
+            this.table = table;
+        }
+
+        @Override
+        public void focusGained(FocusEvent e) {
+            table.putClientProperty(Key.FOCUSED_TABLE_CELL, e.getComponent());
+        }
+
+        @Override
+        public void focusLost(FocusEvent e) {
+            JComponent activeCell = (JComponent)
+                    table.getClientProperty(Key.ACTIVE_TABLE_CELL);
+            JComponent focusedCell = (JComponent)
+                    table.getClientProperty(Key.FOCUSED_TABLE_CELL);
+            if (activeCell == focusedCell) {
+                table.putClientProperty(Key.ACTIVE_TABLE_CELL, null);
+            }
+            removeRealCell(table, Key.FOCUSED_TABLE_CELL);
+            table.putClientProperty(Key.FOCUSED_TABLE_CELL, null);
+        }
+    }
+
+    private static class TableHeaderHandler
+            implements MouseListener, PropertyChangeListener {
+        private static final MouseListener EMPTY_MOUSE_HAMDLER = new MouseAdapter() {};
+
+        private JTableHeader tableHeader;
+        private MouseListener defaultMouseHandler;
+
+        private TableHeaderHandler(JTableHeader tableHeader) {
+            this.tableHeader = tableHeader;
+            updateDefaultMouseHandler();
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            int resizingColumn = getResizingColumn(tableHeader, e.getPoint());
+
+            // Prevent row sorting if a header column separator is clicked.
+            switch (e.getClickCount()) {
+                case 1:
+                    if (resizingColumn == -1) {
+                        defaultMouseHandler.mouseClicked(e);
+                    }
+                    return;
+                case 2:
+                    if (resizingColumn != -1) {
+                        fitColumnWidth(tableHeader.getTable(), resizingColumn);
+                    }
+            }
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+            defaultMouseHandler.mousePressed(e);
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            defaultMouseHandler.mouseReleased(e);
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            defaultMouseHandler.mouseEntered(e);
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            defaultMouseHandler.mouseExited(e);
+        }
+
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            // UI has changed.
+            updateDefaultMouseHandler();
+        }
+
+        private void updateDefaultMouseHandler() {
+            // UI has changed. Only BasicTableHeaderUI can be handled here.
+            for (MouseListener l : tableHeader.getMouseListeners()) {
+                if (l instanceof MouseInputHandler) {
+                    tableHeader.removeMouseListener(l);
+                    defaultMouseHandler = l;
+                    return;
+                }
+            }
+            // For non BasicTableHeaderUI, just use an empty handler.
+            defaultMouseHandler = EMPTY_MOUSE_HAMDLER;
+        }
+    }
+
+    private static enum Key {
+        LOOK_AND_FEEL, TEXT_BACKGROUND_MONITORED, TABLE_MONITORED,
+        ACTIVE_TABLE_CELL, FOCUSED_TABLE_CELL, TABLE_CELL_FOCUS_LISTENER,
+        TABLE_HEADER_MONITORED;
     }
 }
