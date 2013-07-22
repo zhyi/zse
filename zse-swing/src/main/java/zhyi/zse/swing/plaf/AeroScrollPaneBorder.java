@@ -21,9 +21,11 @@ import java.awt.Graphics;
 import java.awt.Insets;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
-import zhyi.zse.swing.AeroEditorBorder.AeroEditorBorderUIResource;
+import zhyi.zse.swing.PropertyKeys;
+import zhyi.zse.swing.plaf.AeroEditorBorder.AeroEditorBorderUIResource;
 
 /**
  * The Windows Aero styled border for scroll pane.
@@ -56,8 +58,9 @@ public class AeroScrollPaneBorder extends AeroEditorBorderUIResource {
 
     private boolean shouldPaintAeroEditorBorder(Component c) {
         JScrollPane scrollPane = (JScrollPane) c;
-        Component view = scrollPane.getViewport().getView();
+        Component view = SwingUtilities.getUnwrappedView(scrollPane.getViewport());
         return view instanceof JTextComponent || view instanceof JComponent
-                && Boolean.TRUE.equals(((JComponent) view).getClientProperty("editable"));
+                && Boolean.TRUE.equals(
+                        ((JComponent) view).getClientProperty(PropertyKeys.AERO_EDITOR));
     }
 }

@@ -23,7 +23,6 @@ import java.awt.LayoutManager;
 import java.awt.Rectangle;
 import javax.swing.JComponent;
 import javax.swing.plaf.ComponentUI;
-import zhyi.zse.swing.AeroEditorBorder;
 
 /**
  * The combo box UI for Windows Aero look and feel.

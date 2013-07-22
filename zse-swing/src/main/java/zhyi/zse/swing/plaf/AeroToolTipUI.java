@@ -28,7 +28,6 @@ import javax.swing.JComponent;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicToolTipUI;
-import zhyi.zse.swing.AeroToolTipBorder;
 
 /**
  * The tool tip UI for Windows Aero look and feel.

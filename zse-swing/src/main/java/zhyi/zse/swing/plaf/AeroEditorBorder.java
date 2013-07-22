@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package zhyi.zse.swing;
+package zhyi.zse.swing.plaf;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.plaf.UIResource;
 import javax.swing.text.JTextComponent;
+import zhyi.zse.swing.PropertyKeys;
 
 /**
  * This class implements the Windows Aero styled editor border.
@@ -175,7 +176,8 @@ public class AeroEditorBorder implements Border {
 
         JComponent editor = c;
         if (c instanceof JScrollPane) {
-            Component view = ((JScrollPane) c).getViewport().getView();
+            Component view = SwingUtilities.getUnwrappedView(
+                    ((JScrollPane) c).getViewport());
             if (view instanceof JComponent) {
                 editor = (JComponent) view;
             }
@@ -193,7 +195,8 @@ public class AeroEditorBorder implements Border {
             }
         } else if (editor instanceof JSpinner) {
             editable = enabled;
-        } else if (Boolean.TRUE.equals(editor.getClientProperty("editable"))) {
+        } else if (Boolean.TRUE.equals(
+                editor.getClientProperty(PropertyKeys.AERO_EDITOR))) {
             editable = true;
         }
 
