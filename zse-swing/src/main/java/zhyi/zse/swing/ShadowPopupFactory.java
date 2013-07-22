@@ -27,6 +27,7 @@ import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.SwingUtilities;
+import zhyi.zse.swing.plaf.AeroToolTipBorder;
 
 /**
  * This popup factory adds shadow borders for any popup components.
