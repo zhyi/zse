@@ -44,7 +44,6 @@ import zhyi.zse.swing.MultiValueSelector;
 import zhyi.zse.swing.SwingUtils;
 import zhyi.zse.swing.event.SelectionChangeEvent;
 import zhyi.zse.swing.event.SelectionChangeListener;
-import zhyi.zse.swing.parser.GuiParser;
 
 /**
  * The context action support for table header.
