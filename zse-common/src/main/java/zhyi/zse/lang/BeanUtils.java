@@ -88,10 +88,15 @@ public class BeanUtils {
      * @param bean The bean from which the property is got.
      * @param propertyName The property name.
      * @return The property value.
+     * @throws IllegalArgumentException If the property is not readable.
      */
     public static Object getProperty(Object bean, String propertyName) {
-        return ReflectionUtils.invoke(
-                getBeanMate(bean.getClass()).getterMap.get(propertyName), bean);
+        Method getter = getBeanMate(bean.getClass()).getterMap.get(propertyName);
+        if (getter == null) {
+            throw new IllegalArgumentException(
+                    "Property " + propertyName + " is not readable.");
+        }
+        return ReflectionUtils.invoke(getter, bean);
     }
 
     /**
@@ -100,10 +105,15 @@ public class BeanUtils {
      * @param bean The bean to which the new property is set.
      * @param propertyName The property name.
      * @param property The property's new value.
+     * @throws IllegalArgumentException If the property is not writable.
      */
     public static void setProperty(Object bean, String propertyName, Object property) {
-        ReflectionUtils.invoke(
-                getBeanMate(bean.getClass()).setterMap.get(propertyName), bean, property);
+        Method setter = getBeanMate(bean.getClass()).setterMap.get(propertyName);
+        if (setter == null) {
+            throw new IllegalArgumentException(
+                    "Property " + propertyName + " is not writable.");
+        }
+        ReflectionUtils.invoke(setter, bean, property);
     }
 
     /**
@@ -126,7 +136,7 @@ public class BeanUtils {
      * @return {@code true} if the listener is supported, otherwise {@code false}.
      */
     public static boolean isNamedPropertyChangeListenerSupported(Class<?> beanClass) {
-        return getBeanMate(beanClass).addSpecificPropertyChangeListener != null;
+        return getBeanMate(beanClass).addNamedPropertyChangeListener != null;
     }
 
     /**
@@ -136,12 +146,17 @@ public class BeanUtils {
      * @param bean The bean to which the listener is added.
      * @param listenerClass the listener's class.
      * @param listener The listener to be added.
+     * @throws IllegalArgumentException If the listener is not supported.
      */
     public static <L extends EventListener> void addListener(
             Object bean, Class<L> listenerClass, L listener) {
-        ReflectionUtils.invoke(
-                getBeanMate(bean.getClass()).addListenerMap.get(listenerClass),
-                bean, listener);
+        Method addListener = getBeanMate(bean.getClass())
+                .addListenerMap.get(listenerClass);
+        if (addListener == null) {
+            throw new IllegalArgumentException(
+                    listenerClass.getName() + " is not supported.");
+        }
+        ReflectionUtils.invoke(addListener, bean, listener);
     }
 
     /**
@@ -151,12 +166,17 @@ public class BeanUtils {
      * @param bean The bean from which the listener is removed.
      * @param listenerClass the listener's class.
      * @param listener The listener to be removed.
+     * @throws IllegalArgumentException If the listener is not supported.
      */
     public static <L extends EventListener> void removeListener(
             Object bean, Class<L> listenerClass, L listener) {
-        ReflectionUtils.invoke(
-                getBeanMate(bean.getClass()).removeListenerMap.get(listenerClass),
-                bean, listener);
+        Method removeListener = getBeanMate(bean.getClass())
+                .removeListenerMap.get(listenerClass);
+        if (removeListener == null) {
+            throw new IllegalArgumentException(
+                    listenerClass.getName() + " is not supported.");
+        }
+        ReflectionUtils.invoke(removeListener, bean, listener);
     }
 
     /**
@@ -166,11 +186,17 @@ public class BeanUtils {
      * @param bean The bean to which the listener is added.
      * @param propertyName The property's name.
      * @param propertyChangeListener The listener to be added.
+     * @throws IllegalArgumentException If the listener is not supported.
      */
-    public static void addSpecificPropertyChangeListener(Object bean,
+    public static void addNamedPropertyChangeListener(Object bean,
             String propertyName, PropertyChangeListener propertyChangeListener) {
-        ReflectionUtils.invoke(
-                getBeanMate(bean.getClass()).addSpecificPropertyChangeListener,
+        Method addSpecificPropertyChangeListener
+                = getBeanMate(bean.getClass()).addNamedPropertyChangeListener;
+        if (addSpecificPropertyChangeListener == null) {
+            throw new IllegalArgumentException(
+                    "Named PropertyChangeListener is not supported.");
+        }
+        ReflectionUtils.invoke(addSpecificPropertyChangeListener,
                 bean, propertyName, propertyChangeListener);
     }
 
@@ -181,41 +207,93 @@ public class BeanUtils {
      * @param bean The bean from which the listener is removed.
      * @param propertyName The property's name.
      * @param propertyChangeListener The listener to be removed.
+     * @throws IllegalArgumentException If the listener is not supported.
      */
-    public static void removeSpecificPropertyChangeListener(Object bean,
+    public static void removeNamedPropertyChangeListener(Object bean,
             String propertyName, PropertyChangeListener propertyChangeListener) {
-        ReflectionUtils.invoke(
-                getBeanMate(bean.getClass()).removeSpecificPropertyChangeListener,
+        Method removeSpecificPropertyChangeListener
+                = getBeanMate(bean.getClass()).removeNamedPropertyChangeListener;
+        if (removeSpecificPropertyChangeListener == null) {
+            throw new IllegalArgumentException(
+                    "Named PropertyChangeListener is not supported.");
+        }
+        ReflectionUtils.invoke(removeSpecificPropertyChangeListener,
                 bean, propertyName, propertyChangeListener);
     }
 
     /**
      * Adds a listener to the specified bean property, and if the property is
-     * changed later, removes it from the old property and adds it to the new
-     * one.
+     * changed later, removes it from the old value and adds it to the new one.
      *
-     * @param <L> The listener's type
+     * @param <L> The listener interface's type.
      * @param bean The bean that owns the property.
-     * @param propertyName The property name.
-     * @param listenerClass The listener's class.
-     * @param listener The listener to be added.
+     * @param propertyName The name of the bean property for which to keep
+     *        the listener.
+     * @param listenerInterface The listener interface used to determine
+     *        the methods to add or remove the listener.
+     * @param listener The listener to be kept.
+     * @throws IllegalArgumentException If {@code listenerInterface} is not
+     *         an interface.
      */
     public static <L extends EventListener> void keepListener(Object bean,
-            String propertyName, final Class<L> listenerClass, final L listener) {
+            String propertyName, final Class<L> listenerInterface, final L listener) {
+        if (!listenerInterface.isInterface()) {
+            throw new IllegalArgumentException(
+                    listenerInterface + " is not an interface.");
+        }
+
         Object property = getProperty(bean, propertyName);
         if (property != null) {
-            addListener(property, listenerClass, listener);
+            addListener(property, listenerInterface, listener);
         }
-        addSpecificPropertyChangeListener(bean, propertyName, new PropertyChangeListener() {
+        addNamedPropertyChangeListener(bean, propertyName, new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 Object oldValue = evt.getOldValue();
                 if (oldValue != null) {
-                    removeListener(oldValue, listenerClass, listener);
+                    removeListener(oldValue, listenerInterface, listener);
                 }
                 Object newValue = evt.getNewValue();
                 if (newValue != null) {
-                    addListener(newValue, listenerClass, listener);
+                    addListener(newValue, listenerInterface, listener);
+                }
+            }
+        });
+    }
+
+    /**
+     * Adds a {@link PropertyChangeListener} for a bean property's property, and
+     * if the bean property is changed later, removes it from the old value and
+     * adds it to the new one.
+     *
+     * @param bean The bean that owns the "{@code beanPropertyName}" property.
+     * @param beanPropertyName The name of the bean property for which to keep
+     *        the listener.
+     * @param propertyPropertyName The name of the bean property's property
+     *        that the listener listens on.
+     * @param propertyChangeListener The listener to be kept.
+     */
+    public static void keepNamedPropertyChangeListener(Object bean,
+            String beanPropertyName, final String propertyPropertyName,
+            final PropertyChangeListener propertyChangeListener) {
+        Object beanProperty = getProperty(bean, beanPropertyName);
+        if (beanProperty != null) {
+            addNamedPropertyChangeListener(
+                    beanProperty, propertyPropertyName, propertyChangeListener);
+        }
+        addNamedPropertyChangeListener(
+                bean, beanPropertyName, new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                Object oldValue = evt.getOldValue();
+                if (oldValue != null) {
+                    removeNamedPropertyChangeListener(
+                            oldValue, propertyPropertyName, propertyChangeListener);
+                }
+                Object newValue = evt.getNewValue();
+                if (newValue != null) {
+                    addNamedPropertyChangeListener(
+                            newValue, propertyPropertyName, propertyChangeListener);
                 }
             }
         });
@@ -223,9 +301,15 @@ public class BeanUtils {
 
     private static BeanMate getBeanMate(Class<?> beanClass) {
         BeanMate beanMate = BEAN_MATE_MAP.get(beanClass);
-        return beanMate == null
-                ? BEAN_MATE_MAP.putIfAbsent(beanClass, new BeanMate(beanClass))
-                : beanMate;
+        if (beanMate == null) {
+            beanMate = new BeanMate(beanClass);
+            BeanMate existingBeanMate = BEAN_MATE_MAP.putIfAbsent(
+                    beanClass, beanMate);
+            if (existingBeanMate != null) {
+                beanMate = existingBeanMate;
+            }
+        }
+        return beanMate;
     }
 
     private static class BeanMate {
@@ -233,8 +317,8 @@ public class BeanUtils {
         private Map<String, Method> setterMap;
         private Map<Class<?>, Method> addListenerMap;
         private Map<Class<?>, Method> removeListenerMap;
-        private Method addSpecificPropertyChangeListener;
-        private Method removeSpecificPropertyChangeListener;
+        private Method addNamedPropertyChangeListener;
+        private Method removeNamedPropertyChangeListener;
 
         private BeanMate(Class<?> beanClass) {
             getterMap = new HashMap<>();
@@ -269,10 +353,10 @@ public class BeanUtils {
                                 && PropertyChangeListener.class.isAssignableFrom(parameterTypes[1])) {
                             switch (name) {
                                 case "addPropertyChangeListener":
-                                    addSpecificPropertyChangeListener = method;
+                                    addNamedPropertyChangeListener = method;
                                     break;
                                 case "removePropertyChangeListener":
-                                    removeSpecificPropertyChangeListener = method;
+                                    removeNamedPropertyChangeListener = method;
                             }
                         }
                 }
