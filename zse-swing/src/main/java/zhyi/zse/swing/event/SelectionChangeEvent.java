@@ -44,7 +44,7 @@ public class SelectionChangeEvent<B extends AbstractButton, T> extends EventObje
      *
      * @param source The source single value selector.
      */
-    public SelectionChangeEvent(SingleValueSelector<? extends B, ? extends T> source) {
+    public SelectionChangeEvent(SingleValueSelector<B, T> source) {
         super(source);
     }
 
@@ -53,7 +53,7 @@ public class SelectionChangeEvent<B extends AbstractButton, T> extends EventObje
      *
      * @param source The source multi-value selector.
      */
-    public SelectionChangeEvent(MultiValueSelector<? extends B, ? extends T> source) {
+    public SelectionChangeEvent(MultiValueSelector<B, T> source) {
         super(source);
     }
 }

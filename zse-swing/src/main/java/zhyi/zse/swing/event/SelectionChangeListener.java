@@ -37,5 +37,5 @@ public interface SelectionChangeListener<B extends AbstractButton, T> extends Ev
      *
      * @param e The selection change event.
      */
-    void selectionChanged(SelectionChangeEvent<? extends B, ? extends T> e);
+    void selectionChanged(SelectionChangeEvent<B, T> e);
 }

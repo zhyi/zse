@@ -47,7 +47,7 @@ import zhyi.zse.swing.event.SelectionChangeListener;
  */
 public class MultiValueSelector<B extends AbstractButton, T> {
     private Map<B, T> buttonValueMap;
-    private EventListenerList selectionListeners;
+    private EventListenerList listenerList;
     private ItemListener itemListener;
 
     /**
@@ -55,13 +55,13 @@ public class MultiValueSelector<B extends AbstractButton, T> {
      */
     public MultiValueSelector() {
         buttonValueMap = new LinkedHashMap<>();
-        selectionListeners = new EventListenerList();
+        listenerList = new EventListenerList();
         itemListener = new ItemListener() {
             @Override
             @SuppressWarnings("unchecked")
             public void itemStateChanged(ItemEvent e) {
-                for (SelectionChangeListener<? super B, ? super T> l
-                        : selectionListeners.getListeners(SelectionChangeListener.class)) {
+                for (SelectionChangeListener<B, T> l
+                        : listenerList.getListeners(SelectionChangeListener.class)) {
                     l.selectionChanged(new SelectionChangeEvent<>(MultiValueSelector.this));
                 }
             }
@@ -100,7 +100,8 @@ public class MultiValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Returns all buttons contained in this selector a read-only set.
+     * Returns all buttons contained in this selector as a read-only set,
+     * in the order they were added to this selector.
      *
      * @return A read-only set containing all added buttons.
      */
@@ -223,9 +224,8 @@ public class MultiValueSelector<B extends AbstractButton, T> {
      *
      * @param l The selection change listener to be added.
      */
-    public void addSelectionChangeListener(
-            SelectionChangeListener<? super B, ? super T> l) {
-        selectionListeners.add(SelectionChangeListener.class, l);
+    public void addSelectionChangeListener(SelectionChangeListener<B, T> l) {
+        listenerList.add(SelectionChangeListener.class, l);
     }
 
     /**
@@ -233,8 +233,7 @@ public class MultiValueSelector<B extends AbstractButton, T> {
      *
      * @param l The selection listener to be removed.
      */
-    public void removeSelectionChangeListener(
-            SelectionChangeListener<? super B, ? super T> l) {
-        selectionListeners.remove(SelectionChangeListener.class, l);
+    public void removeSelectionChangeListener(SelectionChangeListener<B, T> l) {
+        listenerList.remove(SelectionChangeListener.class, l);
     }
 }
