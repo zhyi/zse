@@ -28,7 +28,7 @@ import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
-import zhyi.zse.swing.SwingUtils;
+import zhyi.zse.swing.PropertyKeys;
 
 /**
  * Provides support for context actions and context popup menu.
@@ -37,14 +37,8 @@ import zhyi.zse.swing.SwingUtils;
  *
  * @author Zhao Yi
  */
-public abstract class ContextActionSupport<C extends JComponent> {
-    /**
-     * If a {@link ContextActionSupport} instance is stored to a component with
-     * this key, the popup menu can be automatically shown.
-     *
-     * @see SwingUtils#switchLookAndFeel(LookAndFeel)
-     */
-    public static final String CONTEXT_ACTION_SUPPORT = "ContextActionSupport";
+public class ContextActionSupport<C extends JComponent> {
+    private static final PropertyChangeListener CAS_CHANGE_HANDLER = new CasChangeHandler();
 
     protected C component;
     private Map<Integer, List<Action>> actionGroupMap;
@@ -61,6 +55,8 @@ public abstract class ContextActionSupport<C extends JComponent> {
         actionGroupMap = new TreeMap<>();
         contextMenu = new JPopupMenu();
         acceleratorChangeHandler = new AcceleratorChangeHandler();
+        component.addPropertyChangeListener(
+                PropertyKeys.CONTEXT_ACTION_SUPPORT, CAS_CHANGE_HANDLER);
     }
 
     /**
@@ -69,8 +65,9 @@ public abstract class ContextActionSupport<C extends JComponent> {
      * If the action has defined an accelerator, the accelerator is bound to
      * the action in the component, and any change to the accelerator is tracked.
      * <p>
-     * The action can have a "{@code visible}" property, and if that property's
-     * value is {@link Boolean#FALSE}, it is not shown in the context popup menu.
+     * The action can have a {@link PropertyKeys#ACTION_VISIBLE} property, and
+     * if that property's value is {@link Boolean#FALSE}, it is not shown in
+     * the context popup menu.
      * <p>
      * The {@code groupId} parameter is used to control how actions are organized
      * in the context popup menu. Actions with the same group ID are displayed
@@ -93,6 +90,19 @@ public abstract class ContextActionSupport<C extends JComponent> {
     }
 
     /**
+     * Returns all installed actions as an array.
+     *
+     * @return An array containing all installed actions.
+     */
+    public Action[] getInstalledActions() {
+        List<Action> actions = new ArrayList<>();
+        for (List<Action> actionGroup : actionGroupMap.values()) {
+            actions.addAll(actionGroup);
+        }
+        return actions.toArray(new Action[actions.size()]);
+    }
+
+    /**
      * Uninstalls a context action from the component.
      * <p>
      * If the action has defined an accelerator, it will be unbound from
@@ -111,20 +121,21 @@ public abstract class ContextActionSupport<C extends JComponent> {
     }
 
     /**
-     * Returns all installed actions as an array.
-     *
-     * @return An array containing all installed actions.
+     * Uninstalls all context actions from the component.
      */
-    public Action[] getInstalledActions() {
-        List<Action> actions = new ArrayList<>();
+    public void uninstallAllActions() {
         for (List<Action> actionGroup : actionGroupMap.values()) {
-            actions.addAll(actionGroup);
+            for (Action action : actionGroup) {
+                action.removePropertyChangeListener(acceleratorChangeHandler);
+                unbind((KeyStroke) action.getValue(Action.ACCELERATOR_KEY));
+            }
         }
-        return actions.toArray(new Action[actions.size()]);
+        actionGroupMap.clear();
     }
 
     /**
-     * Shows a popup menu containing all visible actions.
+     * Shows a popup menu containing all visible actions. Menu items are recreated
+     * from actions each time when the popup menu is about to show.
      *
      * @param x The popup menu's x coordinate in the component's coordinate space.
      * @param y The popup menu's y coordinate in the component's coordinate space.
@@ -163,6 +174,15 @@ public abstract class ContextActionSupport<C extends JComponent> {
         }
     }
 
+    /**
+     * Callback method when the component's {@link PropertyKeys#CONTEXT_ACTION_SUPPORT}
+     * has been changed. Subclasses can override this method to clean up any
+     * associations established by this object, e.g. removing listeners added
+     * to the component. The default implementation does nothing.
+     */
+    protected void cleanUp() {
+    }
+
     private void bind(Action action) {
         KeyStroke accelerator = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
         if (accelerator != null) {
@@ -183,6 +203,18 @@ public abstract class ContextActionSupport<C extends JComponent> {
         public void propertyChange(PropertyChangeEvent evt) {
             unbind((KeyStroke) evt.getOldValue());
             bind((Action) evt.getSource());
+        }
+    }
+
+    private static class CasChangeHandler implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            ContextActionSupport<?> oldCas = (ContextActionSupport<?>) evt.getOldValue();
+            if (oldCas != null) {
+                oldCas.uninstallAllActions();
+                oldCas.cleanUp();
+                oldCas.component.removePropertyChangeListener(this);
+            }
         }
     }
 }
