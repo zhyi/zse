@@ -62,6 +62,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSlider;
@@ -86,6 +87,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.ProcessingInstruction;
 import org.xml.sax.SAXException;
+import zhyi.zse.collection.CollectionUtils;
 import zhyi.zse.conversion.AbstractConverter;
 import zhyi.zse.conversion.Converter;
 import zhyi.zse.conversion.ConverterManager;
@@ -118,6 +120,12 @@ public class GuiParser {
                     AttributeSet.class);
     private static final Map<Class<?>, BeanMate> beanMateMap = new HashMap<>();
     private static final Map<Class<?>, ListenerMate> listenerMateMap = new HashMap<>();
+    private static final PropertyChangeListener COMPOUND_COMPONENT_LOCALE_CHANGE_HANLER
+            = new CompoundComponentLocaleChangeHandler();
+    private static final PropertyChangeListener DATA_COMPONENT_LOCALE_CHANGE_HANLER
+            = new DataComponentLocaleChangeHandler();
+    private static final PropertyChangeListener SLIDER_LOCALE_CHANGE_HANLER
+            = new SliderLocaleChangeHandler();
 
     private Object controller;
     private Class<?> controllerClass;
@@ -306,6 +314,9 @@ public class GuiParser {
      * <controller_class_simple_name>.xml}". For example, if the controller's
      * class is "{@code com.abc.Controller}", its associating GUI XML file must
      * be located in package "{@code com.abc}", and named as "{@code Controller.xml}".
+     * This rule also applies to resource bundles if there is no "{@code resource}"
+     * processing instruction but resource bundle expressions ("{@code #{res.XXX}")
+     * are used.
      * <p>
      * The controller's class can optionally declares fields with their types
      * and names matching the elements declared in the GUI XML file. The GUI XML
@@ -322,8 +333,7 @@ public class GuiParser {
      * @param existingObjectMap A map containing existing ID-object pairs;
      *                          may be {@code null}.
      */
-    public void parse(Object controller,
-            Map<String, Object> existingObjectMap) {
+    public void parse(Object controller, Map<String, Object> existingObjectMap) {
         this.controller = controller;
         controllerClass = controller.getClass();
         controllerLoader = controllerClass.getClassLoader();
@@ -345,7 +355,8 @@ public class GuiParser {
         dynamicLocale = true;
 
         try {
-            String guiFile = controllerClass.getSimpleName() + ".xml";
+            String fileName = controllerClass.getSimpleName();
+            String guiFile = fileName + ".xml";
             for (Node node : iterable(documentBuilder.parse(
                     controllerClass.getResource(guiFile).toString()).getChildNodes())) {
                 switch (node.getNodeType()) {
@@ -376,8 +387,10 @@ public class GuiParser {
                     case Node.ELEMENT_NODE:    // The unique root node.
                         if (bundle == null) {
                             // Assume the resource bundle has the same name
-                            // as the controller's class.
-                            bundle = controllerClass.getName();
+                            // as the controller's class. It has to be done
+                            // like this in case of inner class.
+                            bundle = controllerClass.getPackage().getName()
+                                    + "." + fileName;
                         }
                         for (Element child : getChildren((Element) node, "*")) {
                             createBean(child);
@@ -420,26 +433,20 @@ public class GuiParser {
             }
         }
 
-        if (dynamicLocale) {
-            if (bean instanceof JFileChooser || bean instanceof JColorChooser) {
-                final JComponent c = (JComponent) bean;
-                c.addPropertyChangeListener("locale", new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        c.updateUI();
-                    }
-                });
-            } else if (bean instanceof JComboBox || bean instanceof JList
-                    || bean instanceof JSpinner || bean instanceof JTable
-                    || bean instanceof JTree || bean instanceof JSlider) {
-                final JComponent c = (JComponent) bean;
-                c.addPropertyChangeListener("locale", new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        c.revalidate();
-                        c.repaint();
-                    }
-                });
+        if (dynamicLocale && bean instanceof JComponent) {
+            JComponent c = (JComponent) bean;
+            if (c instanceof JFileChooser || c instanceof JColorChooser
+                    || c instanceof JOptionPane) {
+                c.addPropertyChangeListener(
+                        "locale", COMPOUND_COMPONENT_LOCALE_CHANGE_HANLER);
+            } else if (c instanceof JComboBox || c instanceof JList
+                    || c instanceof JSpinner || c instanceof JTable
+                    || c instanceof JTree) {
+                c.addPropertyChangeListener(
+                        "locale", DATA_COMPONENT_LOCALE_CHANGE_HANLER);
+            } else if (bean instanceof JSlider) {
+                c.addPropertyChangeListener(
+                        "locale", SLIDER_LOCALE_CHANGE_HANLER);
             }
         }
 
@@ -505,41 +512,45 @@ public class GuiParser {
                     }
                     break;
                 case "tab":
-                    JTabbedPane tp = (JTabbedPane) bean;
-                    Component c = (Component) objectMap.get(getAttribute(child, "ref"));
-                    tp.addTab(evaluate(getAttribute(child, "title"), String.class, c.getName()),
-                            evaluate(getAttribute(child, "icon"), Icon.class, null),
-                            c, evaluate(getAttribute(child, "tip"), String.class, null));
-                    String tab = getAttribute(child, "tab");
-                    if (tab != null) {
-                        tp.setTabComponentAt(tp.getTabCount() - 1,
-                                (Component) objectMap.get(tab));
+                    if (bean instanceof JTabbedPane) {
+                        JTabbedPane tp = (JTabbedPane) bean;
+                        Component c = (Component) objectMap.get(getAttribute(child, "ref"));
+                        tp.addTab(evaluate(getAttribute(child, "title"), String.class, c.getName()),
+                                evaluate(getAttribute(child, "icon"), Icon.class, null),
+                                c, evaluate(getAttribute(child, "tip"), String.class, null));
+                        String tab = getAttribute(child, "tab");
+                        if (tab != null) {
+                            tp.setTabComponentAt(tp.getTabCount() - 1,
+                                    (Component) objectMap.get(tab));
+                        }
                     }
                     break;
                 case "label":
-                    JSlider slider = (JSlider) bean;
-                    Dictionary<Integer, Component> labelTable = slider.getLabelTable();
-                    if (labelTable == null) {
-                        labelTable = new Hashtable<>();
-                        slider.setLabelTable(labelTable);
-                    }
-                    Integer value = evaluate(getAttribute(child, "value"), Integer.class);
-                    final String labelExp = getAttribute(child, "label");
-                    Component label = (Component) objectMap.get(labelExp);
-                    if (label == null) {
-                        label = new JLabel(evaluate(labelExp, String.class));
-                        if (dynamicLocale && isLocalizable(labelExp)) {
-                            label.addPropertyChangeListener("locale",
-                                    new PropertyChangeListener() {
-                                @Override
-                                public void propertyChange(PropertyChangeEvent evt) {
-                                    ((JLabel) evt.getSource()).setText(
-                                            evaluate(labelExp, String.class));
-                                }
-                            });
+                    if (bean instanceof JSlider) {
+                        JSlider slider = (JSlider) bean;
+                        Dictionary<Integer, JComponent> labelTable = slider.getLabelTable();
+                        if (labelTable == null) {
+                            labelTable = new Hashtable<>();
+                            slider.setLabelTable(labelTable);
                         }
+                        Integer value = evaluate(getAttribute(child, "value"), Integer.class);
+                        final String labelExp = getAttribute(child, "label");
+                        JComponent label = (JComponent) objectMap.get(labelExp);
+                        if (label == null) {
+                            label = new JLabel(evaluate(labelExp, String.class));
+                            if (dynamicLocale && isLocalizable(labelExp)) {
+                                label.addPropertyChangeListener("locale",
+                                        new PropertyChangeListener() {
+                                    @Override
+                                    public void propertyChange(PropertyChangeEvent evt) {
+                                        ((JLabel) evt.getSource()).setText(
+                                                evaluate(labelExp, String.class));
+                                    }
+                                });
+                            }
+                        }
+                        labelTable.put(value, label);
                     }
-                    labelTable.put(value, label);
                     break;
                 default:
                     if (name.endsWith("Listener")) {
@@ -1040,6 +1051,40 @@ public class GuiParser {
         @Override
         protected String asStringInternal(T object) {
             throw new UnsupportedOperationException("Not supported.");
+        }
+    }
+
+    // For JFileChooser, JColorChooser and JOptionPane. These components have
+    // children with text hence updateUI is needed.
+    private static class CompoundComponentLocaleChangeHandler implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            ((JComponent) evt.getSource()).updateUI();
+        }
+    }
+
+    // For JComboBox, JList, JSpinner, JTable and JTree.
+    private static class DataComponentLocaleChangeHandler implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            JComponent c = (JComponent) evt.getSource();
+            c.revalidate();
+            c.repaint();
+        }
+    }
+
+    private static class SliderLocaleChangeHandler implements PropertyChangeListener {
+        @Override
+        @SuppressWarnings("unchecked")
+        public void propertyChange(PropertyChangeEvent evt) {
+            Dictionary<Integer, JComponent> labelTable
+                    = ((JSlider) evt.getSource()).getLabelTable();
+            if (labelTable != null) {
+                Locale locale = (Locale) evt.getNewValue();
+                for (JComponent label : CollectionUtils.iterable(labelTable.elements())) {
+                    label.setLocale(locale);
+                }
+            }
         }
     }
 }
