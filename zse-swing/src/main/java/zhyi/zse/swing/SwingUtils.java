@@ -38,6 +38,7 @@ import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Locale;
 import javax.swing.AbstractButton;
 import javax.swing.JComponent;
@@ -53,6 +54,8 @@ import javax.swing.JTextPane;
 import javax.swing.LayoutStyle;
 import javax.swing.LookAndFeel;
 import javax.swing.PopupFactory;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
@@ -76,6 +79,8 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.View;
@@ -791,6 +796,10 @@ public final class SwingUtils {
                                     PropertyKeys.AUTO_FIT_ROW_HEIGHTS, Boolean.TRUE);
                         }
 
+                        if (table.getAutoCreateRowSorter()) {
+                            table.setRowSorter(new RestorableTableRowSorter<>(table.getModel()));
+                        }
+
                         TableHandler tableHandler = new TableHandler(table);
                         table.addPropertyChangeListener("UI", tableHandler);
                         table.addMouseMotionListener(tableHandler);
@@ -1074,12 +1083,19 @@ public final class SwingUtils {
 
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
-            // UI has changed.
-            TableCellEditor editor = table.getCellEditor();
-            if (editor != null && !editor.stopCellEditing()) {
-                editor.cancelCellEditing();
+            switch (evt.getPropertyName()) {
+                case "UI":
+                    TableCellEditor editor = table.getCellEditor();
+                    if (editor != null && !editor.stopCellEditing()) {
+                        editor.cancelCellEditing();
+                    }
+                    removeAllRealCells(table);
+                    return;
+                case "model":
+                    if (table.getAutoCreateRowSorter()) {
+                        table.setRowSorter(new RestorableTableRowSorter<>(table.getModel()));
+                    }
             }
-            removeAllRealCells(table);
         }
 
         private void fitRowHeights() {
