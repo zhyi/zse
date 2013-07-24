@@ -19,7 +19,10 @@ package zhyi.zse.swing.cas;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -226,7 +229,8 @@ public class TableHeaderContextActionSupport extends ContextActionSupport<JTable
             dialog.setLocationRelativeTo(SwingUtilities.getUnwrappedParent(component.getTable()));
             dialog.setVisible(true);
 
-            if (optionPane.getValue().equals(JOptionPane.OK_OPTION)) {
+            Object value = optionPane.getValue();
+            if (value != null && value.equals(JOptionPane.OK_OPTION)) {
                 TableColumnModel columnModel = component.getColumnModel();
                 for (JCheckBox checkBox : checkBoxes) {
                     TableColumn tableColumn = columnSelector.getValue(checkBox);
