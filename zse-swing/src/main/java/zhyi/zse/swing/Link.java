@@ -37,6 +37,23 @@ import javax.swing.plaf.basic.BasicHTML;
  */
 @SuppressWarnings("serial")
 public class Link extends JButton {
+    /**
+     * The URI's property name.
+     */
+    public static final String URI = "uri";
+    /**
+     * The normal style's property name.
+     */
+    public static final String NORMAL_STYLE = "normalStyle";
+    /**
+     * The hovered style's property name.
+     */
+    public static final String HOVERED_STYLE = "hoveredStyle";
+    /**
+     * The visited style's property name.
+     */
+    public static final String VISITED_STYLE = "visitedStyle";
+
     private boolean visited;
     private String styledText;
 
@@ -121,13 +138,15 @@ public class Link extends JButton {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 String name = evt.getPropertyName();
-                if (name.equals(PropertyKey.NORMAL_STYLE.name())
-                        || name.equals(PropertyKey.HOVERED_STYLE.name())
-                        || name.equals(PropertyKey.VISITED_STYLE.name())) {
-                    revalidate();
-                    repaint();
-                } else if (name.equals("UI")) {
-                    styledText = null;
+                switch (name) {
+                    case NORMAL_STYLE:
+                    case HOVERED_STYLE:
+                    case VISITED_STYLE:
+                        revalidate();
+                        repaint();
+                        return;
+                    case "UI":
+                        styledText = null;
                 }
             }
         });
@@ -139,7 +158,7 @@ public class Link extends JButton {
      * @return This link's target URI.
      */
     public URI getUri() {
-        return (URI) getClientProperty(PropertyKey.URI);
+        return (URI) getClientProperty(URI);
     }
 
     /**
@@ -148,7 +167,7 @@ public class Link extends JButton {
      * @param uri The new target URI for this link.
      */
     public void setUri(URI uri) {
-        putClientProperty(PropertyKey.URI, uri);
+        putClientProperty(URI, uri);
     }
 
     /**
@@ -159,7 +178,7 @@ public class Link extends JButton {
      * @return This link's normal style.
      */
     public String getNormalStyle() {
-        return (String) getClientProperty(PropertyKey.NORMAL_STYLE);
+        return (String) getClientProperty(NORMAL_STYLE);
     }
 
     /**
@@ -168,7 +187,7 @@ public class Link extends JButton {
      * @param normalStyle The new normal style for this link.
      */
     public void setNormalStyle(String normalStyle) {
-        putClientProperty(PropertyKey.NORMAL_STYLE, normalStyle);
+        putClientProperty(NORMAL_STYLE, normalStyle);
     }
 
     /**
@@ -179,7 +198,7 @@ public class Link extends JButton {
      * @return This link's hovered style.
      */
     public String getHoveredStyle() {
-        return (String) getClientProperty(PropertyKey.HOVERED_STYLE);
+        return (String) getClientProperty(HOVERED_STYLE);
     }
 
     /**
@@ -188,7 +207,7 @@ public class Link extends JButton {
      * @param hoveredStyle The new hovered style for this link.
      */
     public void setHoveredStyle(String hoveredStyle) {
-        putClientProperty(PropertyKey.HOVERED_STYLE, hoveredStyle);
+        putClientProperty(HOVERED_STYLE, hoveredStyle);
     }
 
     /**
@@ -199,7 +218,7 @@ public class Link extends JButton {
      * @return This link's visited style.
      */
     public String getVisitedStyle() {
-        return (String) getClientProperty(PropertyKey.VISITED_STYLE);
+        return (String) getClientProperty(VISITED_STYLE);
     }
 
     /**
@@ -208,7 +227,7 @@ public class Link extends JButton {
      * @param visitedStyle The new visited style for this link.
      */
     public void setVisitedStyle(String visitedStyle) {
-        putClientProperty(PropertyKey.VISITED_STYLE, visitedStyle);
+        putClientProperty("si", visitedStyle);
     }
 
     @Override
@@ -244,9 +263,5 @@ public class Link extends JButton {
                 styleBuilder.append(";");
             }
         }
-    }
-
-    private static enum PropertyKey {
-        URI, NORMAL_STYLE, HOVERED_STYLE, VISITED_STYLE;
     }
 }
