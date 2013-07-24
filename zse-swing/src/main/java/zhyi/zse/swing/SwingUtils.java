@@ -83,6 +83,7 @@ import zhyi.zse.lang.BeanUtils;
 import zhyi.zse.lang.ExceptionUtils;
 import zhyi.zse.lang.ReflectionUtils;
 import zhyi.zse.swing.cas.ContextActionSupport;
+import zhyi.zse.swing.cas.LinkContextActionSupport;
 import zhyi.zse.swing.cas.TableHeaderContextActionSupport;
 import zhyi.zse.swing.cas.TextComponentContextActionSupport;
 import zhyi.zse.swing.plaf.AeroComboBoxUI;
@@ -821,6 +822,15 @@ public final class SwingUtils {
                         tableHeader.addMouseListener(tableHeaderHandler);
                         tableHeader.addPropertyChangeListener(
                                 "UI", tableHeaderHandler);
+                    }
+                }
+
+                // Add default context action support for link.
+                if (c instanceof Link) {
+                    Link link = (Link) c;
+                    if (link.getClientProperty(PropertyKeys.CONTEXT_ACTION_SUPPORT) == null) {
+                        link.putClientProperty(PropertyKeys.CONTEXT_ACTION_SUPPORT,
+                                new LinkContextActionSupport(link));
                     }
                 }
 
