@@ -17,15 +17,12 @@
 package zhyi.zse.swing.cas;
 
 import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.util.ResourceBundle;
-import static javax.swing.Action.ACCELERATOR_KEY;
-import static javax.swing.Action.NAME;
+import java.lang.reflect.Method;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.text.JTextComponent;
-import javax.swing.text.TextAction;
 import javax.swing.undo.UndoManager;
+import zhyi.zse.lang.ReflectionUtils;
 import zhyi.zse.swing.PropertyKeys;
 import zhyi.zse.swing.SwingUtils;
 
@@ -61,6 +58,10 @@ import zhyi.zse.swing.SwingUtils;
  * @author Zhao Yi
  */
 public class TextComponentContextActionSupport extends ContextActionSupport<JTextComponent> {
+    private static final String BUNDLE = "zhyi.zse.swing.cas.TextComponentContextActionSupport";
+    private static final Method GET_FOCUSED_COMPONENT
+            = ReflectionUtils.getDeclaredMethod(JTextComponent.class, "getFocusedComponent");
+
     /**
      * Constructs a new instance. To make "Undo" and "Redo" actions work,
      * an {@link UndoManager} needs be added to the document and stored as
@@ -95,8 +96,13 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
         install(TextContextAction.DELETE_ALL, 2);
     }
 
+    private static JTextComponent getTextComponent() {
+        return (JTextComponent) ReflectionUtils
+                .invoke(GET_FOCUSED_COMPONENT, null);
+    }
+
     @SuppressWarnings(value = "serial")
-    private static class TextContextAction extends TextAction {
+    private static class TextContextAction extends AbstractContextAction {
         private static final TextContextAction UNDO
                 = new TextContextAction(TextContextActionType.undo, "ctrl Z");
         private static final TextContextAction REDO
@@ -123,14 +129,14 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
         private TextContextActionType type;
 
         private TextContextAction(TextContextActionType type, String ks) {
-            super(null);
+            super("zhyi.zse.swing.cas.TextComponentContextActionSupport", type.name());
             this.type = type;
             putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(ks));
         }
 
         @Override
         public Object getValue(String key) {
-            JTextComponent tc = getFocusedComponent();
+            JTextComponent tc = getTextComponent();
             switch (key) {
                 case NAME:
                     UndoManager um = (UndoManager) tc.getClientProperty("undoManager");
@@ -144,9 +150,7 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
                                     ? UIManager.getString("AbstractUndoableEdit.redoText")
                                     : um.getRedoPresentationName();
                         default:
-                            return ResourceBundle.getBundle(
-                                            "zhyi.zse.swing.cas.TextComponentContextActionSupport")
-                                    .getString(type.name());
+                            return super.getValue(NAME);
                     }
                 case "visible":
                     switch (type) {
@@ -169,7 +173,7 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
 
         @Override
         public boolean isEnabled() {
-            JTextComponent tc = getFocusedComponent();
+            JTextComponent tc = getTextComponent();
             if (!tc.isEnabled()) {
                 return false;
             }
@@ -207,8 +211,8 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
         }
 
         @Override
-        public void actionPerformed(ActionEvent e) {
-            JTextComponent tc = getFocusedComponent();
+        public void doAction() {
+            JTextComponent tc = getTextComponent();
             UndoManager um = (UndoManager) tc.getClientProperty("undoManager");
             if (isEnabled()) {
                 switch (type) {

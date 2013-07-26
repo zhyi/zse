@@ -19,10 +19,7 @@ package zhyi.zse.swing.cas;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,8 +152,12 @@ public class TableHeaderContextActionSupport extends ContextActionSupport<JTable
         }
 
         @Override
-        String getName() {
-            return super.getName() + "...";
+        public Object getValue(String key) {
+            Object value = super.getValue(key);
+            if (key.equals(NAME)) {
+                value += "...";
+            }
+            return value;
         }
 
         @Override

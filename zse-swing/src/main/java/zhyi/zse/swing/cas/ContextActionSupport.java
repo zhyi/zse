@@ -21,6 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.swing.Action;
@@ -38,7 +39,8 @@ import zhyi.zse.swing.PropertyKeys;
  * @author Zhao Yi
  */
 public class ContextActionSupport<C extends JComponent> {
-    private static final PropertyChangeListener CAS_CHANGE_HANDLER = new CasChangeHandler();
+    private static final PropertyChangeListener
+            COMPONENT_CHANGE_HANDLER = new ComponentChangeHandler();
 
     protected C component;
     private Map<Integer, List<Action>> actionGroupMap;
@@ -56,7 +58,8 @@ public class ContextActionSupport<C extends JComponent> {
         contextMenu = new JPopupMenu();
         acceleratorChangeHandler = new AcceleratorChangeHandler();
         component.addPropertyChangeListener(
-                PropertyKeys.CONTEXT_ACTION_SUPPORT, CAS_CHANGE_HANDLER);
+                PropertyKeys.CONTEXT_ACTION_SUPPORT, COMPONENT_CHANGE_HANDLER);
+        component.addPropertyChangeListener("locale", COMPONENT_CHANGE_HANDLER);
     }
 
     /**
@@ -73,6 +76,10 @@ public class ContextActionSupport<C extends JComponent> {
      * in the context popup menu. Actions with the same group ID are displayed
      * in the same section in the order they are installed, and different sections
      * are divided by separators.
+     * <p>
+     * If the component's locale is changed, the new locale is set to the action
+     * with key {@link PropertyKeys#ACTION_LOCALE}, and interested listeners can
+     * update the action's properties accordingly.
      *
      * @param action The action to be installed.
      * @param groupId The action's group ID.
@@ -206,14 +213,28 @@ public class ContextActionSupport<C extends JComponent> {
         }
     }
 
-    private static class CasChangeHandler implements PropertyChangeListener {
+    private static class ComponentChangeHandler implements PropertyChangeListener {
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
-            ContextActionSupport<?> oldCas = (ContextActionSupport<?>) evt.getOldValue();
-            if (oldCas != null) {
-                oldCas.uninstallAllActions();
-                oldCas.cleanUp();
-                oldCas.component.removePropertyChangeListener(this);
+            switch (evt.getPropertyName()) {
+                case PropertyKeys.CONTEXT_ACTION_SUPPORT:
+                    ContextActionSupport<?> oldCas = (ContextActionSupport<?>) evt.getOldValue();
+                    if (oldCas != null) {
+                        oldCas.uninstallAllActions();
+                        oldCas.cleanUp();
+                        oldCas.component.removePropertyChangeListener(
+                                PropertyKeys.CONTEXT_ACTION_SUPPORT, this);
+                        oldCas.component.removePropertyChangeListener("locale", this);
+                    }
+                    return;
+                case "locale":
+                    ContextActionSupport<?> cas = (ContextActionSupport<?>)
+                            ((JComponent) evt.getSource()).getClientProperty(
+                                    PropertyKeys.CONTEXT_ACTION_SUPPORT);
+                    for (Action action : cas.getInstalledActions()) {
+                        action.putValue(PropertyKeys.ACTION_LOCALE,
+                                (Locale) evt.getNewValue());
+                    }
             }
         }
     }

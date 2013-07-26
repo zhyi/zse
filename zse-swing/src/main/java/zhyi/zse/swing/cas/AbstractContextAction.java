@@ -17,6 +17,8 @@
 package zhyi.zse.swing.cas;
 
 import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ResourceBundle;
 import javax.swing.AbstractAction;
 import zhyi.zse.swing.PropertyKeys;
@@ -25,19 +27,21 @@ import zhyi.zse.swing.PropertyKeys;
  * @author Zhao Yi
  */
 abstract class AbstractContextAction extends AbstractAction {
+    private static final LocaleChangeHandler LOCALE_CHANGE_HANDLER = new LocaleChangeHandler();
+
     private String bundle;
     private String i18nKey;
 
     AbstractContextAction(String bundle, String i18nKey) {
         this.bundle = bundle;
         this.i18nKey = i18nKey;
+        putName(this, bundle, i18nKey);
+        addPropertyChangeListener(LOCALE_CHANGE_HANDLER);
     }
 
     @Override
     public Object getValue(String key) {
         switch (key) {
-            case NAME:
-                return getName();
             case PropertyKeys.ACTION_VISIBLE:
                 return isVisible();
             default:
@@ -52,13 +56,26 @@ abstract class AbstractContextAction extends AbstractAction {
         }
     }
 
-    String getName() {
-        return ResourceBundle.getBundle(bundle).getString(i18nKey);
-    }
-
     boolean isVisible() {
         return true;
     }
 
     abstract void doAction();
+
+    private static void putName(AbstractContextAction a, String bundle, String i18nKey) {
+        ResourceBundle rb = ResourceBundle.getBundle(bundle);
+        if (rb.containsKey(i18nKey)) {
+            a.putValue(NAME, rb.getString(i18nKey));
+        }
+    }
+
+    private static class LocaleChangeHandler implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            if (evt.getPropertyName().equals(PropertyKeys.ACTION_LOCALE)) {
+                AbstractContextAction a = (AbstractContextAction) evt.getSource();
+                putName(a, a.bundle, a.i18nKey);
+            }
+        }
+    }
 }

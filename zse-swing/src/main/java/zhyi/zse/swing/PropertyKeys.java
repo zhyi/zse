@@ -16,6 +16,7 @@
  */
 package zhyi.zse.swing;
 
+import java.util.Locale;
 import javax.swing.undo.UndoManager;
 import zhyi.zse.swing.cas.TextComponentContextActionSupport;
 
@@ -57,6 +58,11 @@ public class PropertyKeys {
      * the action is visible in the context popup menu.
      */
     public static final String ACTION_VISIBLE = "visible";
+    /**
+     * Key to store a {@link Locale} property in a context action, indicating
+     * how the action's properties should be localized.
+     */
+    public static final String ACTION_LOCALE = "locale";
 
     private PropertyKeys() {
     }
