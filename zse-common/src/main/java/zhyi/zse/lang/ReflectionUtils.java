@@ -164,7 +164,7 @@ public class ReflectionUtils {
             makeAccessible(f);
             return f;
         } catch (NoSuchFieldException ex) {
-            return null;
+            throw new RuntimeException(ex);
         }
     }
 
