@@ -58,41 +58,35 @@ public abstract class AbstractInvocationHandler implements InvocationHandler {
 
     /**
      * Invoked when the proxy's {@link Object#equals equals} method is called.
-     * <p>
      * By default this method compares two objects with {@code ==}, and subclasses
      * can override this behavior as needed.
      *
      * @param proxy The proxy instance.
      * @param other The object with which to compare.
-     *
      * @return {@code true} if two objects are the same, otherwise {@code false}.
      */
-    public boolean equals(Object proxy, Object other) {
+    protected boolean equals(Object proxy, Object other) {
         return proxy == other;
     }
 
     /**
      * Invoked when the proxy's {@link Object#hashCode hashCode} method is called.
-     * <p>
      * By default this method returns the proxy's identity hash code, and subclasses
      * can override this behavior as needed.
      *
      * @param proxy The proxy instance.
-     *
      * @return The hash code.
      */
-    public int hashCode(Object proxy) {
+    protected int hashCode(Object proxy) {
         return System.identityHashCode(proxy);
     }
 
     /**
      * Invoked when the proxy's {@link Object#toString toString} method is called.
-     * <p>
      * By default this method returns {@code <class_name>@<hash_code>}, and
      * subclasses can override this behavior as needed.
      *
      * @param proxy The proxy instance.
-     *
      * @return The string representation.
      */
     public String toString(Object proxy) {
@@ -104,11 +98,10 @@ public abstract class AbstractInvocationHandler implements InvocationHandler {
      * Object#equals equals}, {@link Object#hashCode hashCode} and {@link
      * Object#toString toString}.
      *
-     * @param proxy  The proxy instance.
+     * @param proxy The proxy instance.
      * @param method The method being invoked.
-     * @param args   The method arguments.
-     *
+     * @param args The method arguments.
      * @return The value to return from the method invocation.
      */
-    public abstract Object invokeOthers(Object proxy, Method method, Object[] args);
+    protected abstract Object invokeOthers(Object proxy, Method method, Object[] args);
 }

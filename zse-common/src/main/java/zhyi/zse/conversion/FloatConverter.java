@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code float} and its wrapper class {@link Float}.
- *
  * @author Zhao Yi
  */
 class FloatConverter extends AbstractConverter<Float> {

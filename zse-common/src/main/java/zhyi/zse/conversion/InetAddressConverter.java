@@ -20,8 +20,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
- * Converter for {@link InetAddress}.
- *
  * @author Zhao Yi
  */
 public class InetAddressConverter extends AbstractConverter<InetAddress> {

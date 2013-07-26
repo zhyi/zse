@@ -37,9 +37,7 @@ public final class ObjectUtils {
      * {@link ObjectOutputStream}.
      *
      * @param serializable The object to be marshaled.
-     *
      * @return A byte array representing the marshaled object.
-     *
      * @throws IOException If the object cannot be marshaled, or an I/O error
      *         has happened.
      *
@@ -57,13 +55,10 @@ public final class ObjectUtils {
      * Unmarshals the first object from a byte array with {@link ObjectInputStream}.
      *
      * @param bytes The byte array representing the marshaled object.
-     *
      * @return The first object unmarshaled from the byte array.
-     *
      * @throws ClassNotFoundException If the class of the serialized object
-     *                                cannot be found.
-     * @throws IOException            If the byte array cannot be unmarshaled,
-     *                                or an I/O error has occurred.
+     * @throws IOException If the byte array cannot be unmarshaled,
+     *         or an I/O error has occurred.
      *
      * @see ObjectInputStream#readObject()
      */

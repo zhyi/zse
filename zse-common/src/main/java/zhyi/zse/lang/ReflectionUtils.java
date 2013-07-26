@@ -55,9 +55,7 @@ public class ReflectionUtils {
      * otherwise returns the specified class itself.
      *
      * @param <T> The type modeled by the class.
-     *
      * @param c The class to be wrapped.
-     *
      * @return The wrapper class or the original class.
      */
     @SuppressWarnings("unchecked")
@@ -69,7 +67,6 @@ public class ReflectionUtils {
      * Returns the class represented by the specified FQCN.
      *
      * @param name The fully qualified name of the desired class.
-     *
      * @return The desired class.
      *
      * @see Class#forName(String)
@@ -85,10 +82,9 @@ public class ReflectionUtils {
     /**
      * Returns the class represented by the specified FQCN.
      *
-     * @param name       The fully qualified name of the desired class.
+     * @param name The fully qualified name of the desired class.
      * @param initialize Whether the class must be initialized.
-     * @param loader     The class loader from which to load the class.
-     *
+     * @param loader The class loader from which to load the class.
      * @return The desired class.
      *
      * @see Class#forName(String, boolean, ClassLoader)
@@ -103,16 +99,12 @@ public class ReflectionUtils {
     }
 
     /**
-     * Returns a declared constructor of a class.
-     * <p>
-     * If the constructor is inaccessible, it will be made accessible before
-     * returning.
+     * Returns a declared constructor of a class. If the constructor is inaccessible,
+     * it will be made accessible before returning.
      *
      * @param <T> The type modeled by the class.
-     *
-     * @param c              The class object.
+     * @param c The class object.
      * @param parameterTypes The method's parameter types.
-     *
      * @return The desired constructor.
      *
      * @see Class#getDeclaredConstructor
@@ -131,9 +123,8 @@ public class ReflectionUtils {
     /**
      * Returns a public field of a class.
      *
-     * @param c    The class object.
+     * @param c The class object.
      * @param name The field name.
-     *
      * @return The desired field.
      *
      * @see Class#getField
@@ -147,13 +138,11 @@ public class ReflectionUtils {
     }
 
     /**
-     * Returns a declared method of a class.
-     * <p>
-     * If the field is inaccessible, it will be made accessible before returning.
+     * Returns a declared method of a class. If the field is inaccessible,
+     * it will be made accessible before returning.
      *
-     * @param c    The class object.
+     * @param c The class object.
      * @param name The method name.
-     *
      * @return The desired field or {@code null}.
      *
      * @see Class#getDeclaredField
@@ -169,15 +158,12 @@ public class ReflectionUtils {
     }
 
     /**
-     * Returns the value of a field.
-     * <p>
-     * If the field is inaccessible, it will be made accessible after invoking
-     * this method.
+     * Returns the value of a field. If the field is inaccessible, it will be
+     * made accessible after invoking this method.
      *
      * @param f The field object.
      * @param o The object from which to retrieve the field, or {@code null} for
-     *          a static field.
-     *
+     *        a static field.
      * @return The value of the field.
      *
      * @see Field#get
@@ -192,14 +178,12 @@ public class ReflectionUtils {
     }
 
     /**
-     * Sets the value of a field.
-     * <p>
-     * If the field is inaccessible, it will be made accessible after invoking
-     * this method.
+     * Sets the value of a field. If the field is inaccessible, it will be made
+     * accessible after invoking this method.
      *
      * @param f The field object.
      * @param o The object of which the field should be changed, or {@code null}
-     *          for a static field.
+     *        for a static field.
      * @param v the new value of the field. 
      */
     public static void setValue(Field f, Object o, Object v) {
@@ -214,10 +198,9 @@ public class ReflectionUtils {
     /**
      * Returns a public method of a class.
      *
-     * @param c              The class object.
-     * @param name           The method name.
+     * @param c The class object.
+     * @param name The method name.
      * @param parameterTypes The method's parameter types.
-     *
      * @return The desired method or {@code null}.
      *
      * @see Class#getMethod
@@ -232,14 +215,12 @@ public class ReflectionUtils {
     }
 
     /**
-     * Returns a declared method of a class.
-     * <p>
-     * If the method is inaccessible, it will be made accessible before returning.
+     * Returns a declared method of a class. If the method is inaccessible,
+     * it will be made accessible before returning.
      *
-     * @param c              The class object.
-     * @param name           The method name.
+     * @param c The class object.
+     * @param name The method name.
      * @param parameterTypes The method's parameter types.
-     *
      * @return The desired method or {@code null}.
      *
      * @see Class#getDeclaredMethod
@@ -256,16 +237,13 @@ public class ReflectionUtils {
     }
 
     /**
-     * Invokes a method.
-     * <p>
-     * If the method is inaccessible, it will be made accessible after invoking
-     * this method.
+     * Invokes a method. If the method is inaccessible, it will be made accessible
+     * after invoking this method.
      *
-     * @param m         The method to be invoked.
-     * @param o         The object from which to invoke the method, or {@code null}
-     *                  for a static method.
+     * @param m The method to be invoked.
+     * @param o The object from which to invoke the method, or {@code null}
+     *        for a static method.
      * @param paramters The parameters for the method call.
-     *
      * @return The value returned from the method, or {@code null} for a void
      *         method.
      */
@@ -283,9 +261,7 @@ public class ReflectionUtils {
      * class.
      *
      * @param <T> The type modeled by the class.
-     *
      * @param c The class object.
-     *
      * @return The constructed new instance.
      *
      * @see Class#newInstance

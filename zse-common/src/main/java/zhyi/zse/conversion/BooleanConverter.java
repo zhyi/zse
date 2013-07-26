@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code boolean} and its wrapper class {@link Boolean}.
- *
  * @author Zhao Yi
  */
 class BooleanConverter extends AbstractConverter<Boolean> {

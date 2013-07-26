@@ -37,25 +37,20 @@ public abstract class AbstractConverter<T> implements Converter<T> {
     }
 
     /**
-     * Converts a literal value to an object.
-     * <p>
-     * This method is conditionally invoked by {@link #asObject(String)}, when
-     * the literal value is not {@code null} or an empty string.
+     * Converts a literal value to an object. This method is invoked by
+     * {@link #asObject(String)}, when the literal value is not {@code null}
+     * or an empty string.
      *
      * @param literalValue The literal representation of an object.
-     *
      * @return An object represented by the literal value.
      */
     protected abstract T asObjectInternal(String literalValue);
 
     /**
-     * Converts an object to its literal representation.
-     * <p>
-     * This method is conditionally invoked by {@link #asString(Object)}, when
-     * the object is not {@code null}.
+     * Converts an object to its literal representation. This method is invoked
+     * by {@link #asString(Object)}, when the object is not {@code null}.
      *
      * @param object The object to be converted.
-     *
      * @return The literal representation of the object.
      */
     protected abstract String asStringInternal(T object);

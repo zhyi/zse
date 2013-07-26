@@ -19,8 +19,6 @@ package zhyi.zse.conversion;
 import java.util.Locale;
 
 /**
- * Converter for {@link Locale}.
- *
  * @author Zhao Yi
  */
 class LocaleConverter extends AbstractConverter<Locale> {

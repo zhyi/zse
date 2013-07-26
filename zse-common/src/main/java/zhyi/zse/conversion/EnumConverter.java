@@ -17,10 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code enum} types.
- *
- * @param <T> The {@code enum} type supported by this converter.
- *
  * @author Zhao Yi
  */
 class EnumConverter<T extends Enum<T>> extends AbstractConverter<T> {

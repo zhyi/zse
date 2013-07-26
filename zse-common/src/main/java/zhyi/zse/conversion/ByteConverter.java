@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code byte} and its wrapper class {@link Byte}.
- *
  * @author Zhao Yi
  */
 class ByteConverter extends AbstractConverter<Byte> {

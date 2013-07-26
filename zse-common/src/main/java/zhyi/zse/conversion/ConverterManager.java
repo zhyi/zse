@@ -99,15 +99,12 @@ public class ConverterManager {
     }
 
     /**
-     * Registers a converter for a class.
-     * <p>
-     * If another converter for the same class has been registered, it is
-     * replaced by the specified converter.
+     * Registers a converter for a class. If another converter for the same class
+     * has been registered, it is replaced by the specified converter.
      *
      * @param <T> The type modeled by the target class.
-     *
      * @param targetClass The target class of the converter.
-     * @param converter   The converter to be registered.
+     * @param converter The converter to be registered.
      */
     public <T> void register(Class<T> targetClass, Converter<T> converter) {
         converterMap.put(ReflectionUtils.wrap(targetClass), converter);
@@ -117,7 +114,6 @@ public class ConverterManager {
      * Deregisters the converter for the specified class.
      *
      * @param <T> The type modeled by the target class.
-     *
      * @param forClass The target class of the converter to be removed.
      */
     public <T> void deregister(Class<T> forClass) {
@@ -125,15 +121,11 @@ public class ConverterManager {
     }
 
     /**
-     * Returns the registered converter for the specified class.
-     * <p>
-     * If the target class is an {@code enum}, a converter will be automatically
-     * registered.
+     * Returns the registered converter for the specified class. If the target
+     * class is an {@code enum}, a converter will be automatically registered.
      *
      * @param <T> The type modeled by the target class.
-     *
      * @param targetClass The target class of the converter.
-     *
      * @return The desired converter, or {@code null} if no such converter
      *         is found.
      */

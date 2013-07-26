@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code int} and its wrapper class {@link Integer}.
- *
  * @author Zhao Yi
  */
 class IntegerConverter extends AbstractConverter<Integer> {

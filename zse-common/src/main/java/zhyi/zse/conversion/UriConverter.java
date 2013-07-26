@@ -20,8 +20,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- * Converter for {@link URI}.
- *
  * @author Zhao Yi
  */
 public class UriConverter extends AbstractConverter<URI> {

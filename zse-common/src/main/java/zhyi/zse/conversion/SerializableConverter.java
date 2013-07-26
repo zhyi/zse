@@ -22,8 +22,6 @@ import javax.xml.bind.DatatypeConverter;
 import zhyi.zse.lang.ObjectUtils;
 
 /**
- * Converter for serializable types.
- *
  * @author Zhao Yi
  */
 class SerializableConverter implements Converter<Serializable> {

@@ -28,7 +28,6 @@ public interface Converter<T> {
      * Converts a literal value to an object.
      *
      * @param literalValue The literal representation of an object.
-     *
      * @return An object represented by the literal value.
      */
     T asObject(String literalValue);
@@ -37,7 +36,6 @@ public interface Converter<T> {
      * Converts an object to its literal representation.
      *
      * @param object The object to be converted.
-     *
      * @return The literal representation of the object.
      */
     String asString(T object);

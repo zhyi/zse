@@ -35,18 +35,15 @@ public final class StringUtils {
     /**
      * Splits a string with the specified delimiter, {@link
      * DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER} delimitation style,
-     * and trimming option.
-     * <p>
-     * This method behaves similar to {@link String#split(String)}, but runs
-     * faster because it does not use regular expression.
+     * and trimming option. This method behaves similar to {@link String#split(String)},
+     * but runs faster because it does not use regular expression.
      * <p>
      * For example, splitting string {@code "/abc//d"} using {@code "/"}
      * as the delimiter yields a result of {@code "", "abc", "", "d"}.
      *
-     * @param source    The source string to be split.
+     * @param source The source string to be split.
      * @param delimiter The delimiter string used to split the source string.
-     * @param trim      Whether each segment should be trimmed.
-     *
+     * @param trim Whether each segment should be trimmed.
      * @return The resulting segments as a list of strings.
      */
     public static List<String> split(String source, String delimiter, boolean trim) {
@@ -68,19 +65,16 @@ public final class StringUtils {
      * <dd>{@code "/", "abc/", "/", "d"}
      * </dl>
      *
-     * @param source    the source string to be split.
+     * @param source the source string to be split.
      * @param delimiter The delimiter string used to split the source string.
-     * @param style     The delimitation style; may be {@code null}, in which
-     *                  case {@link DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER}
-     *                  is used. Note that {@link DelimitationStyle#INSERT_DELIMITER
-     *                  INSERT_DELIMITER} is not supported.
-     * @param trim      Whether each segment should be trimmed.
-     *
+     * @param style The delimitation style; may be {@code null}, in which case
+     *        {@link DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER} is used.
+     *        Note that {@link DelimitationStyle#INSERT_DELIMITER INSERT_DELIMITER}
+     *        is not supported.
+     * @param trim Whether each segment should be trimmed.
      * @return The resulting segments as a list of strings.
-     *
      * @throws IllegalArgumentException If the delimitation style is
-     *                                  {@link DelimitationStyle#INSERT_DELIMITER
-     *                                  INSERT_DELIMITER}.
+     *         {@link DelimitationStyle#INSERT_DELIMITER INSERT_DELIMITER}.
      */
     public static List<String> split(String source, String delimiter,
             DelimitationStyle style, boolean trim) {
@@ -95,13 +89,12 @@ public final class StringUtils {
      * For example, splitting string {@code "/abc//d"} twice using {@code "/"}
      * as the delimiter yields a result of {@code "", "abc", "/d"}.
      *
-     * @param source    the source string to be split.
+     * @param source the source string to be split.
      * @param delimiter The delimiter string used to split the source string.
-     * @param trim      Whether each segment should be trimmed.
-     * @param limit     The maximum splitting times. If it is {@code 0},
-     *                  the returned list contains only the source string.
-     *                  If it is negative, no limitation is applied.
-     *
+     * @param trim Whether each segment should be trimmed.
+     * @param limit The maximum splitting times. If it is {@code 0}, the returned
+     *        list contains only the source string. If it is negative, no limitation
+     *        is applied.
      * @return The resulting segments as a list of strings.
      */
     public static List<String> split(String source, String delimiter, boolean trim, int limit) {
@@ -123,22 +116,19 @@ public final class StringUtils {
      * <dd>{@code "/", "abc/", "/d"}
      * </dl>
      *
-     * @param source    the source string to be split.
+     * @param source the source string to be split.
      * @param delimiter The delimiter string used to split the source string.
-     * @param style     The delimitation style; may be {@code null}, in which
-     *                  case {@link DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER}
-     *                  is used. Note that {@link DelimitationStyle#INSERT_DELIMITER
-     *                  INSERT_DELIMITER} is not supported.
-     * @param trim      Whether each segment should be trimmed.
-     * @param limit     The maximum splitting times. If it is {@code 0},
-     *                  the returned list contains only the source string.
-     *                  If it is negative, no limitation is applied.
-     *
+     * @param style The delimitation style; may be {@code null}, in which case
+     *        {@link DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER} is used.
+     *        Note that {@link DelimitationStyle#INSERT_DELIMITER INSERT_DELIMITER}
+     *        is not supported.
+     * @param trim Whether each segment should be trimmed.
+     * @param limit The maximum splitting times. If it is {@code 0}, the returned
+     *        list contains only the source string. If it is negative, no limitation
+     *        is applied.
      * @return The resulting segments as a list of strings.
-     *
      * @throws IllegalArgumentException If the delimitation style is
-     *                                  {@link DelimitationStyle#INSERT_DELIMITER
-     *                                  INSERT_DELIMITER}.
+     *         {@link DelimitationStyle#INSERT_DELIMITER INSERT_DELIMITER}.
      */
     public static List<String> split(String source, String delimiter,
             DelimitationStyle style, boolean trim, int limit) {
@@ -243,16 +233,13 @@ public final class StringUtils {
 
     /**
      * Concatenates the string representations of the objects contained in the
-     * specified collection.
-     * <p>
-     * The concatenation order is the same as the iteration order of
-     * the specified collection.
+     * specified collection. The concatenation order is the same as the iteration
+     * order of the specified collection.
      * <p>
      * For example, concatenating list {@code ["a", "b", "c"]} yields a result
      * of {@code "abc"}.
      *
      * @param sources The source objects to be concatenated.
-     *
      * @return The concatenation result.
      */
     public static String concat(Collection<?> sources) {
@@ -262,9 +249,8 @@ public final class StringUtils {
     /**
      * Concatenates the string representations of the objects contained in the
      * specified list with the specified delimiter and delimitation style.
-     * <p>
-     * The concatenation order is the same as the iteration order of
-     * the specified collection.
+     * The concatenation order is the same as the iteration order of the specified
+     * collection.
      * <p>
      * For example, concatenating list {@code ["a", "b", "c"]} using {@code "/"}
      * as the delimiter yields the following results with different delimitation
@@ -278,12 +264,10 @@ public final class StringUtils {
      * <dd>{@code "a/b/c/"}
      * </dl>
      *
-     * @param sources   The source objects to be concatenated.
+     * @param sources The source objects to be concatenated.
      * @param delimiter The delimiter to be inserted between source objects.
-     * @param style     The delimitation style; may be {@code null}, in which
-     *                  case {@link DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER}
-     *                  is used.
-     *
+     * @param style The delimitation style; may be {@code null}, in which case
+     *        {@link DelimitationStyle#IGNORE_DELIMITER IGNORE_DELIMITER} is used.
      * @return The concatenation result.
      */
     public static String concat(Collection<? extends Object> sources,
@@ -318,10 +302,9 @@ public final class StringUtils {
      * Replaces the first occurrence of string {@code target} with string
      * {@code replacement} in a string.
      *
-     * @param source      The source string.
-     * @param target      The character to be replaced.
+     * @param source The source string.
+     * @param target The character to be replaced.
      * @param replacement The character to be substituted for the first match.
-     *
      * @return The resulting string.
      */
     public static String replaceFirst(String source, String target, String replacement) {
@@ -330,15 +313,13 @@ public final class StringUtils {
 
     /**
      * Replaces all occurrences of string {@code target} with string
-     * {@code replacement}.
-     * <p>
-     * This method behaves the same as {@link String#replace(CharSequence,
-     * CharSequence)}, but runs faster because it does not use regular expression.
+     * {@code replacement}. This method behaves the same as {@link
+     * String#replace(CharSequence, CharSequence)}, but runs faster because it
+     * does not use regular expression.
      *
-     * @param source      The source string.
-     * @param target      The character to be replaced.
+     * @param source The source string.
+     * @param target The character to be replaced.
      * @param replacement The character to be substituted for each match.
-     *
      * @return The resulting string.
      */
     public static String replaceAll(String source, String target, String replacement) {
@@ -349,13 +330,11 @@ public final class StringUtils {
      * Replaces at most the first {@code limit} occurrences of string
      * {@code target} with string {@code replacement} in a string.
      *
-     * @param source      The source string.
-     * @param target      The string to be replaced.
+     * @param source The source string.
+     * @param target The string to be replaced.
      * @param replacement The string to be substituted for each match.
-     * @param limit       The maximum replacing times. If it is {@code 0},
-     *                    the source string is returned. If if is negative,
-     *                    no limitation is applied.
-     *
+     * @param limit The maximum replacing times. If it is {@code 0}, the source
+     *        string is returned. If if is negative, no limitation is applied.
      * @return The resulting string.
      */
     public static String replace(String source, String target, String replacement, int limit) {

@@ -19,8 +19,6 @@ package zhyi.zse.conversion;
 import java.util.Date;
 
 /**
- * Converter for {@link Date}.
- *
  * @author Zhao Yi
  */
 class DateConverter extends AbstractConverter<Date> {

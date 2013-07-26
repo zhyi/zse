@@ -20,8 +20,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * Converter for {@link URL}.
- *
  * @author Zhao Yi
  */
 public class UrlConverter extends AbstractConverter<URL> {

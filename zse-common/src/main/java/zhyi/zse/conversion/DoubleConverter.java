@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code double} and its wrapper class {@link Double}.
- *
  * @author Zhao Yi
  */
 class DoubleConverter extends AbstractConverter<Double> {

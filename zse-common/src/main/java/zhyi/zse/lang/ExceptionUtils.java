@@ -32,7 +32,6 @@ public class ExceptionUtils {
      * Prints the stack trace of an exception to a string.
      *
      * @param t The exception from which to get the stack trace.
-     *
      * @return The stack trace as a string.
      */
     public static String printStackTrace(Throwable t) {
@@ -46,7 +45,6 @@ public class ExceptionUtils {
      * have one.
      *
      * @param t The exception to be checked for root cause.
-     *
      * @return The root cause or {@code null}.
      *
      * @see Throwable#getCause()

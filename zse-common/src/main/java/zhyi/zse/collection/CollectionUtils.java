@@ -34,9 +34,8 @@ public class CollectionUtils {
      * Returns a list containing all elements retrieved from the specified
      * iterable in the order they are returned by the iterable.
      *
-     * @param <E>      The element's type.
+     * @param <E> The element's type.
      * @param iterable The iterable that provides elements.
-     *
      * @return A list containing all elements retrieved from the iterable.
      */
     public static <E> List<E> list(Iterable<E> iterable) {
@@ -48,8 +47,7 @@ public class CollectionUtils {
      * iterator in the order they are returned from the iterator.
      *
      * @param <E> The element's type.
-     * @param it  The iterator that provides elements.
-     *
+     * @param it The iterator that provides elements.
      * @return A list containing all elements retrieved from the iterator.
      */
     public static <E> List<E> list(Iterator<E> it) {
@@ -64,8 +62,7 @@ public class CollectionUtils {
      * Wraps an iterator in an iterable that can be used in a for-each loop.
      *
      * @param <E> The element type.
-     * @param it  The iterator to be wrapped.
-     *
+     * @param it The iterator to be wrapped.
      * @return An iterable object that wraps the passed-in iterator.
      */
     public static <E> Iterable<E> iterable(final Iterator<E> it) {
@@ -79,14 +76,11 @@ public class CollectionUtils {
 
     /**
      * Wraps an enumeration in an iterable object that can be used in a for-each
-     * loop.
-     * <p>
-     * The iterator provided by the returned iterable does not support
+     * loop. The iterator provided by the returned iterable does not support
      * the {@link Iterator#remove() remove()} operation.
      *
      * @param <E> The element type.
-     * @param e   The enumeration to be wrapped.
-     *
+     * @param e The enumeration to be wrapped.
      * @return An iterable object that wraps the passed-in enumeration.
      */
     public static <E> Iterable<E> iterable(final Enumeration<E> e) {

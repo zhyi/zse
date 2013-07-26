@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code char} and its wrapper class {@link Character}.
- *
  * @author Zhao Yi
  */
 class CharacterConverter extends AbstractConverter<Character> {

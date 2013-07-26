@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@code short} and its wrapper class {@link Short}.
- *
  * @author Zhao Yi
  */
 class ShortConverter extends AbstractConverter<Short> {

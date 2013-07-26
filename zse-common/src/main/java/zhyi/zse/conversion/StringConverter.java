@@ -17,8 +17,6 @@
 package zhyi.zse.conversion;
 
 /**
- * Converter for {@link String}.
- *
  * @author Zhao Yi
  */
 class StringConverter implements Converter<String> {
