@@ -16,10 +16,12 @@
  */
 package zhyi.zse.lang;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import zhyi.zse.i18n.FallbackLocaleControl;
 
 /**
  * Utility methods for strings.
@@ -141,8 +143,10 @@ public final class StringUtils {
     public static List<String> split(String source, String delimiter,
             DelimitationStyle style, boolean trim, int limit) {
         if (style == DelimitationStyle.INSERT_DELIMITER) {
-            throw new IllegalArgumentException(
-                    "INSERT_DELIMITER delimitation style is not supported.");
+            throw new IllegalArgumentException(MessageFormat.format(
+                    FallbackLocaleControl.EN_US_CONTROL.getString(
+                            "zhyi.zse.lang.StringUtils", "badDelimitationStyle"),
+                    style.name()));
         }
 
         if (limit == 0 || source.isEmpty()) {
