@@ -34,7 +34,7 @@ public class Mnemonic {
     /**
      * Constructs a new mnemonic.
      *
-     * @param text  The display text.
+     * @param text The display text.
      * @param mChar The mnemonic character.
      * @param index The mnemonic character's index in the display text.
      */
@@ -72,14 +72,12 @@ public class Mnemonic {
     }
 
     /**
-     * Analyzes the specified string and build a mnemonic.
-     * <p>
-     * The mnemonic character is defined as the first character that is surrounded
-     * by dashes ({@code _}) in the string. The two dashes will be removed in
-     * the display text of the returned mnemonic.
+     * Analyzes the specified string and build a mnemonic. The mnemonic character
+     * is defined as the first character that is surrounded by dashes ({@code _})
+     * in the string. The two dashes will be removed in the display text
+     * of the returned mnemonic.
      *
      * @param s The string to be analyzed.
-     *
      * @return The mnemonic, or {@code null} if the string is {@code null} or
      *         does not have a mnemonic character.
      */

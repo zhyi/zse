@@ -43,7 +43,6 @@ public class AeroToolTipUI extends BasicToolTipUI {
      * Creates a UI for the specified component.
      *
      * @param c The component for which the UI is created.
-     *
      * @return The created UI.
      */
     public static ComponentUI createUI(JComponent c) {

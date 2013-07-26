@@ -27,7 +27,6 @@ import javax.swing.AbstractButton;
  * @param <T> The selector's value type.
  *
  * @author Zhao Yi
- *
  * @see SingleValueSelector
  * @see MultiValueSelector
  */

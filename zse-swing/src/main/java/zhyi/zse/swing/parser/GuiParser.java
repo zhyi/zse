@@ -239,11 +239,9 @@ public class GuiParser {
 
     /**
      * Registers a custom converter for string-to-object conversion during
-     * parsing the GUI XML file.
-     * <p>
-     * The converter does not need to implement {@link Converter#asString}.
-     * If a converter has already been registered for the type, it will be
-     * replaced.
+     * parsing the GUI XML file. The converter does not need to implement
+     * {@link Converter#asString}. If a converter has already been registered
+     * for the type, it will be replaced.
      * <p>
      * By default, {@link GuiParser} supports the following types in addition
      * to the standard converters provided by {@link ConverterManager} itself:
@@ -273,7 +271,7 @@ public class GuiParser {
      *
      * @param <T> The type supported by the converter.
      *
-     * @param type      The class of the supported type.
+     * @param type The class of the supported type.
      * @param converter The converter to be registered.
      */
     public <T> void registerConverter(Class<T> type, Converter<T> converter) {
@@ -281,10 +279,8 @@ public class GuiParser {
     }
 
     /**
-     * Registers a custom bean processor to this parser.
-     * <p>
-     * All registered bean processors will be called after a bean has been
-     * parsed by the standard parser.
+     * Registers a custom bean processor to this parser. All registered bean
+     * processors will be called after a bean has been parsed by the standard parser.
      *
      * @param beanProcessor The bean processor to be registered.
      */
@@ -294,10 +290,9 @@ public class GuiParser {
 
     /**
      * Parses the specified controller's associating GUI XML file to initialize
-     * the GUI components defined in the controller.
-     * <p>
-     * This method is a convenient variant of {@link #parse(Object, Map)
-     * parse(Object, Map)} when there are no existing objects.
+     * the GUI components defined in the controller. This method is a convenient
+     * variant of {@link #parse(Object, Map) parse(Object, Map)} when there are
+     * no existing objects.
      *
      * @param controller The controller instance.
      */
@@ -329,9 +324,8 @@ public class GuiParser {
      * in this map, that object is directly used instead of reflectively creating
      * a new one with the default constructor.
      *
-     * @param controller        The controller.
-     * @param existingObjectMap A map containing existing ID-object pairs;
-     *                          may be {@code null}.
+     * @param controller The controller.
+     * @param existingObjectMap A map containing existing ID-object pairs.
      */
     public void parse(Object controller, Map<String, Object> existingObjectMap) {
         this.controller = controller;
@@ -892,9 +886,8 @@ public class GuiParser {
     /**
      * A short cut to parse GUI with default configurations.
      *
-     * @param controller        The controller.
-     * @param existingObjectMap A map containing existing ID-object pairs;
-     *                          may be {@code null}.
+     * @param controller The controller.
+     * @param existingObjectMap A map containing existing ID-object pairs.
      */
     public static void parseGui(Object controller,
             Map<String, Object> existingObjectMap) {

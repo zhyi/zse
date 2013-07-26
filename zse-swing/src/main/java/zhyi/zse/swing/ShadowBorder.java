@@ -51,7 +51,7 @@ public class ShadowBorder implements Border {
      * Constructs a new shadow border.
      *
      * @param thickness The shadow's thickness.
-     * @param offset    The shadow's offset to the top and left of the component.
+     * @param offset The shadow's offset to the top and left of the component.
      */
     public ShadowBorder(int thickness, int offset) {
         this(thickness, offset, DEFAULT_DARK, DEFAULT_BRIGHT);
@@ -61,10 +61,10 @@ public class ShadowBorder implements Border {
      * Constructs a new shadow border.
      *
      * @param thickness The shadow's thickness.
-     * @param offset    The shadow's offset to the top and the left edges
-     *                  of the component.
-     * @param dark      The color that is nearest to the component edge.
-     * @param bright    The color that is farthest from the component edge.
+     * @param offset The shadow's offset to the top and the left edges
+     *        of the component.
+     * @param dark The color that is nearest to the component edge.
+     * @param bright The color that is farthest from the component edge.
      */
     public ShadowBorder(int thickness, int offset, Color dark, Color bright) {
         this.thickness = thickness;
@@ -143,9 +143,8 @@ public class ShadowBorder implements Border {
     }
 
     /**
-     * Returns the color that is nearest to the component edge.
-     * <p>
-     * The default value is {@code "rgba(0, 0, 0, 80)"}.
+     * Returns the color that is nearest to the component edge. The default value
+     * is {@code "rgba(0, 0, 0, 80)"}.
      *
      * @return The dark color.
      */
@@ -154,9 +153,8 @@ public class ShadowBorder implements Border {
     }
 
     /**
-     * Returns the color that is farthest from the component edge.
-     * <p>
-     * The default value is {@code "rgba(0, 0, 0, 2)"}.
+     * Returns the color that is farthest from the component edge. The default
+     * value is {@code "rgba(0, 0, 0, 2)"}.
      *
      * @return The bright color.
      */
@@ -173,7 +171,7 @@ public class ShadowBorder implements Border {
          * Constructs a new shadow border.
          *
          * @param thickness The shadow's thickness.
-         * @param offset    The shadow's offset to the top and left of the component.
+         * @param offset The shadow's offset to the top and left of the component.
          */
         public ShadowBorderUIResource(int thickness, int offset) {
             super(thickness, offset);
@@ -183,10 +181,10 @@ public class ShadowBorder implements Border {
          * Constructs a new shadow border.
          *
          * @param thickness The shadow's thickness.
-         * @param offset    The shadow's offset to the top and the left edges
-         *                  of the component.
-         * @param dark      The color that is nearest to the component edge.
-         * @param bright    The color that is farthest from the component edge.
+         * @param offset The shadow's offset to the top and the left edges
+         *        of the component.
+         * @param dark The color that is nearest to the component edge.
+         * @param bright The color that is farthest from the component edge.
          */
         public ShadowBorderUIResource(int thickness, int offset,
                 Color dark, Color bright) {

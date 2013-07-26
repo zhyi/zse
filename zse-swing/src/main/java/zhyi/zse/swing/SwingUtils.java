@@ -124,8 +124,8 @@ public final class SwingUtils {
     /**
      * Enables or disables the specified components and their children.
      *
-     * @param enabled    {@code true} to enable, or {@code false} to disable
-     *                   the components.
+     * @param enabled {@code true} to enable, or {@code false} to disable
+     *        the components.
      * @param components The components to be enabled or disabled.
      */
     public static void enableAll(boolean enabled, Component... components) {
@@ -146,9 +146,9 @@ public final class SwingUtils {
     /**
      * Displays a window with the position relative to a component.
      *
-     * @param window            The window component to display.
+     * @param window The window component to display.
      * @param relativeComponent The component relative to which the window is
-     *                          positioned; may be {@code null}.
+     *        positioned; may be {@code null}.
      *
      * @see Window#setLocationRelativeTo(Component)
      */
@@ -172,12 +172,12 @@ public final class SwingUtils {
      * Brings up a dialog displaying the specified message wrapped in a scroll
      * pane.
      *
-     * @param parent      The component of which the window ancestor is used as
-     *                    the owner of the dialog.
-     * @param message     The message to be displayed; may be formatted with HTML.
-     * @param wrap        Whether to wrap the lines. Takes no effect if
-     *                    the message is an HTML string.
-     * @param title       The title for the dialog.
+     * @param parent The component of which the window ancestor is used as
+     *        the owner of the dialog.
+     * @param message The message to be displayed; may be formatted with HTML.
+     * @param wrap Whether to wrap the lines. Takes no effect if the message
+     *        is an HTML string.
+     * @param title The title for the dialog.
      * @param messageType One of the message type defined in {@link JOptionPane}.
      */
     public static void showLongMessage(Component parent, String message,
@@ -204,11 +204,11 @@ public final class SwingUtils {
     /**
      * Displays the stack trace of an exception in a dialog.
      *
-     * @param parent    The component of which the window ancestor is used as
-     *                  the owner of the dialog.
+     * @param parent The component of which the window ancestor is used as
+     *        the owner of the dialog.
      * @param throwable The exception to be displayed.
-     * @param severe    {@code true} for an error icon, or {@code false} for
-     *                  a warning icon.
+     * @param severe {@code true} for an error icon, or {@code false} for
+     *        a warning icon.
      */
     public static void showStackTrace(Component parent,
             Throwable throwable, boolean severe) {
@@ -222,7 +222,6 @@ public final class SwingUtils {
      * text component.
      *
      * @param textComponent The text component.
-     *
      * @return The raw text.
      */
     public static String getRawText(JTextComponent textComponent) {
@@ -235,14 +234,12 @@ public final class SwingUtils {
     }
 
     /**
-     * Sets the text for a label, with the mnemonic character analyzed.
-     * <p>
-     * The mnemonic character is defined as the first character that is surrounded
-     * by dashes ({@code _}) in the text. If no mnemonic character is found,
+     * Sets the text for a label, with the mnemonic character analyzed by
+     * {@link Mnemonic#analyze(String)}. If no mnemonic character is found,
      * the text is set to the label directly.
      *
      * @param label The label.
-     * @param text  The text with an optional mnemonic character.
+     * @param text The text with an optional mnemonic character.
      *
      * @see Mnemonic#analyze
      */
@@ -258,14 +255,12 @@ public final class SwingUtils {
     }
 
     /**
-     * Sets the text for a button, with the mnemonic character analyzed.
-     * <p>
-     * The mnemonic character is defined as the first character that is surrounded
-     * by dashes ({@code _}) in the text. If no mnemonic character is found,
+     * Sets the text for a button, with the mnemonic character analyzed by
+     * {@link Mnemonic#analyze(String)}. If no mnemonic character is found,
      * the text is set to the button directly.
      *
      * @param button The button.
-     * @param text   The text with an optional mnemonic character.
+     * @param text The text with an optional mnemonic character.
      *
      * @see Mnemonic#analyze
      */
@@ -281,12 +276,10 @@ public final class SwingUtils {
     }
 
     /**
-     * Changes the look and feel at runtime.
-     * <p>
-     * This method is a convenient variant of {@link #switchLookAndFeel(LookAndFeel)
-     * #switchLookAndFeel(LookAndFeel)}. The {@link LookAndFeel} instance is
-     * loaded by the given class name, using the current thread's context class
-     * loader.
+     * Changes the look and feel at runtime. This method is a convenient variant
+     * of {@link #switchLookAndFeel(LookAndFeel) #switchLookAndFeel(LookAndFeel)}.
+     * The {@link LookAndFeel} instance is loaded by the given class name, using
+     * the current thread's context class loader.
      *
      * @param lafClassName The FQCN of the new look and feel.
      *
@@ -302,10 +295,8 @@ public final class SwingUtils {
     }
 
     /**
-     * Changes the look and feel at runtime.
-     * <p>
-     * The change takes immediate effect. Additionally, the following fixes and
-     * enhancements to the UI are applied:
+     * Changes the look and feel at runtime. The change takes immediate effect.
+     * Additionally, the following fixes and enhancements to the UI are applied:
      * <p>
      * <b>Context Action Support</b>
      * <p>
@@ -348,10 +339,10 @@ public final class SwingUtils {
      * property {@link PropertyKeys#AERO_EDITOR} set to {@link Boolean#TRUE}
      * to make its (or its enclosing scroll pane's) {@link AeroEditorBorder}
      * have highlight effect.
+     * <li>Aero styled {@link AeroToolTipUI} is set to tool tip.
      * <li>Removed the extra border for read-only combo box and tuned the padding.
      * <li>Tuned the padding for menu in menu bar.
      * <li>Fixed background color for some read-only or disabled text component.
-     * <li>Aero styled {@link AeroToolTipUI} is set to tool tip.
      * </ul>
      * <b>Fixes and Enhancements for Nimbus Look And Feel</b>
      * <ul>
@@ -468,13 +459,12 @@ public final class SwingUtils {
     }
 
     /**
-     * Changes the locale at runtime.
-     * <p>
-     * The change takes immediate effect. After invoking this method, the default
-     * locales of JVM, {@link JComponent}, UI defaults and all created components
-     * are set to the specified one. The orientations of all created components
-     * are also changed accordingly. This method can work together with "locale"
-     * property change listeners to implement switching the UI language at runtime.
+     * Changes the locale at runtime. The change takes immediate effect. After
+     * invoking this method, the default locales of JVM, {@link JComponent},
+     * UI defaults and all created components are set to the specified one.
+     * The orientations of all created components are also changed accordingly.
+     * This method can work together with "locale" property change listeners
+     * to implement switching the UI language at runtime.
      *
      * @param locale The new locale to be applied.
      */

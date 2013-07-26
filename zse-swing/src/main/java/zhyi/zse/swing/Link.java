@@ -68,7 +68,7 @@ public class Link extends JButton {
      * Constructs a new link with the target URI and the URI's string representation
      * as the text.
      *
-     * @param uri 
+     * @param uri The link's target URI.
      */
     public Link(URI uri) {
         this(uri.toString(), null, uri);
@@ -78,7 +78,7 @@ public class Link extends JButton {
      * Constructs a new link with the text and target URI.
      *
      * @param text The link's text.
-     * @param uri  The link's target URI.
+     * @param uri The link's target URI.
      */
     public Link(String text, URI uri) {
         this(text, null, uri);
@@ -88,7 +88,7 @@ public class Link extends JButton {
      * Constructs a new link with the icon and the target URI.
      *
      * @param icon The link's icon.
-     * @param uri  The link's target URI.
+     * @param uri The link's target URI.
      */
     public Link(Icon icon, URI uri) {
         this(null, icon, uri);
@@ -99,7 +99,7 @@ public class Link extends JButton {
      *
      * @param text The link's text.
      * @param icon The link's icon.
-     * @param uri  The link's target URI.
+     * @param uri The link's target URI.
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public Link(String text, Icon icon, URI uri) {
@@ -171,9 +171,7 @@ public class Link extends JButton {
     }
 
     /**
-     * Returns this link's normal style.
-     * <p>
-     * This default value is "{@code color: blue}".
+     * Returns this link's normal style. The default value is "{@code color: blue}".
      *
      * @return This link's normal style.
      */
@@ -191,9 +189,8 @@ public class Link extends JButton {
     }
 
     /**
-     * Returns this link's style when the mouse is hovered.
-     * <p>
-     * This default value is "{@code text-decoration: underline}".
+     * Returns this link's style when the mouse is hovered. The default value is
+     * "{@code text-decoration: underline}".
      *
      * @return This link's hovered style.
      */
@@ -211,9 +208,8 @@ public class Link extends JButton {
     }
 
     /**
-     * Returns this link's style when it has already been visited.
-     * <p>
-     * This default value is "{@code color: purple}".
+     * Returns this link's style when it has already been visited. This default
+     * value is "{@code color: purple}".
      *
      * @return This link's visited style.
      */

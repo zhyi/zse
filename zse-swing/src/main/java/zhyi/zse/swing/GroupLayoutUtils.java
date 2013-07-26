@@ -47,13 +47,11 @@ public final class GroupLayoutUtils {
     /**
      * Creates a group layout for a container component.
      *
-     * @param container               The container for which the group layout
-     *                                is created.
+     * @param container The container for which the group layout is created.
      * @param autoCreateContainerGaps Whether the gaps between container edge
-     *                                and components should be created automatically.
-     * @param autoCreateGaps          Whether the gaps between components should
-     *                                be created automatically.
-     *
+     *        and components should be created automatically.
+     * @param autoCreateGaps Whether the gaps between components should be
+     *        created automatically.
      * @return The created group layout.
      */
     public static GroupLayout createGroupLayout(Container container,
@@ -78,10 +76,10 @@ public final class GroupLayoutUtils {
      * to the horizontal group, so as to prevent the group layout from resizing
      * their widths at runtime.
      *
-     * @param reference  The component of which the preferred width is to be
-     *                   used as the common preferred width.
+     * @param reference The component of which the preferred width is to be
+     *        used as the common preferred width.
      * @param companions The components to have the same preferred width with
-     *                   the reference component.
+     *        the reference component.
      */
     public static void linkPreferredWidth(
             final Component reference, Component... companions) {
@@ -113,10 +111,10 @@ public final class GroupLayoutUtils {
      * to the vertical group, so as to prevent the group layout from resizing
      * their heights at runtime.
      *
-     * @param reference  The component of which the preferred height is to be
-     *                   used as the common preferred height.
+     * @param reference The component of which the preferred height is to be
+     *        used as the common preferred height.
      * @param companions The components to have the same preferred height with
-     *                   the reference component.
+     *        the reference component.
      */
     public static void linkPreferredHeight(
             final Component reference, Component... companions) {
@@ -148,10 +146,10 @@ public final class GroupLayoutUtils {
      * to both the horizontal and vertical groups, so as to prevent the group
      * layout from resizing them at runtime.
      *
-     * @param reference  The component of which the preferred size is to be
-     *                   used as the common preferred size.
+     * @param reference The component of which the preferred size is to be
+     *        used as the common preferred size.
      * @param companions The components to have the same preferred size with
-     *                   the reference component.
+     *        the reference component.
      */
     public static void linkPreferredSize(
             final Component reference, Component... companions) {

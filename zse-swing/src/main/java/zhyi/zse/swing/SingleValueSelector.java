@@ -31,9 +31,8 @@ import zhyi.zse.swing.event.SelectionChangeEvent;
 import zhyi.zse.swing.event.SelectionChangeListener;
 
 /**
- * Groups multiple buttons together as a single-value selector.
- * <p>
- * This class is typically useful to manage radio buttons.
+ * Groups multiple buttons together as a single-value selector. This class is
+ * typically used to manage radio buttons.
  *
  * @param <B> The button's type.
  * @param <T> The value's type.
@@ -66,14 +65,12 @@ public class SingleValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Adds a button and its associated value into this selector.
-     * <p>
-     * The button is also added to an implicit {@link ButtonGroup}. If this selector
-     * already contains the button, the value is replaced by the specified one.
+     * Adds a button and its associated value into this selector. The button is
+     * also added to an implicit {@link ButtonGroup}. If this selector already
+     * contains the button, the value is replaced by the specified one.
      *
      * @param button The button to be added.
-     * @param value  The value associated with the button.
-     *
+     * @param value The value associated with the button.
      * @return This selector for chained invocations.
      */
     public SingleValueSelector<B, T> add(B button, T value) {
@@ -84,13 +81,11 @@ public class SingleValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Returns the value associated with the specified button.
-     * <p>
-     * A {@code null} return can either mean the button is not contained in this
-     * selector, or the button is associated with {@code null}.
+     * Returns the value associated with the specified button. A {@code null}
+     * return can either mean the button is not contained in this selector,
+     * or the button is associated with {@code null}.
      *
      * @param button The button.
-     *
      * @return The button's associating value.
      */
     public T getValue(AbstractButton button) {
@@ -108,12 +103,10 @@ public class SingleValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Removes a button and its associated value from this selector.
-     * <p>
-     * The button is also removed from the implicit {@link ButtonGroup}.
+     * Removes a button and its associated value from this selector. The button
+     * is also removed from the implicit {@link ButtonGroup}.
      *
      * @param button The button to be removed.
-     *
      * @return This selector for chained invocations.
      */
     public SingleValueSelector<B, T> remove(B button) {
@@ -152,7 +145,6 @@ public class SingleValueSelector<B extends AbstractButton, T> {
 
     /**
      * Selects the button with which the specified value is associated.
-     * <p>
      * If the specified value is not associated with any button in this selector,
      * no action is taken.
      *

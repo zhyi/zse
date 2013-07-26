@@ -33,7 +33,6 @@ import zhyi.zse.swing.SingleValueSelector;
  * @param <T> The selector's value type.
  *
  * @author Zhao Yi
- *
  * @see SingleValueSelector
  * @see MultiValueSelector
  */

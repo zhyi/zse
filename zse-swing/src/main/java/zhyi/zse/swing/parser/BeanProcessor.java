@@ -29,7 +29,7 @@ public interface BeanProcessor {
      * The callback method to be invoked during parsing the GUI.
      *
      * @param bean The bean produced by the standard parser.
-     * @param e    The XML element representing the bean.
+     * @param e The XML element representing the bean.
      */
     void process(Object bean, Element e);
 }

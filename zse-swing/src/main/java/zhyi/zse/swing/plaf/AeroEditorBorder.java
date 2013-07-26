@@ -62,10 +62,10 @@ public class AeroEditorBorder implements Border {
     /**
      * Constructs a new Aero editor border.
      *
-     * @param top    The inset from the top.
-     * @param left   The inset from the left.
+     * @param top The inset from the top.
+     * @param left The inset from the left.
      * @param bottom The inset from the bottom.
-     * @param right  The inset from the right.
+     * @param right The inset from the right.
      */
     public AeroEditorBorder(int top, int left, int bottom, int right) {
         insets = new Insets(top, left, bottom, right);
@@ -165,7 +165,6 @@ public class AeroEditorBorder implements Border {
      * {@code true} to update the border's visual effect.
      *
      * @param c The component of which the border is to be checked.
-     *
      * @return {@code true} if the component has an Aero border and the border's
      *         state has been changed, otherwise {@code false}.
      */

@@ -63,10 +63,9 @@ public class ContextActionSupport<C extends JComponent> {
     }
 
     /**
-     * Installs a context action to the component.
-     * <p>
-     * If the action has defined an accelerator, the accelerator is bound to
-     * the action in the component, and any change to the accelerator is tracked.
+     * Installs a context action to the component. If the action has defined
+     * an accelerator, the accelerator is bound to the action in the component,
+     * and any change to the accelerator is tracked.
      * <p>
      * The action can have a {@link PropertyKeys#ACTION_VISIBLE} property, and
      * if that property's value is {@link Boolean#FALSE}, it is not shown in
@@ -110,10 +109,8 @@ public class ContextActionSupport<C extends JComponent> {
     }
 
     /**
-     * Uninstalls a context action from the component.
-     * <p>
-     * If the action has defined an accelerator, it will be unbound from
-     * the component.
+     * Uninstalls a context action from the component. If the action has defined
+     * an accelerator, it will be unbound from the component.
      *
      * @param action The action to be uninstalled.
      */

@@ -26,9 +26,6 @@ import javax.swing.plaf.ComponentUI;
 
 /**
  * The combo box UI for Windows Aero look and feel.
- * <p>
- * If the current Windows Aero look and feel is set with {@link
- * SwingUtils#switchLookAndFeel}, tool tips will have this kind of UIs by default.
  *
  * @author Zhao Yi
  */
@@ -37,7 +34,6 @@ public class AeroComboBoxUI extends WindowsComboBoxUI {
      * Creates a UI for the specified component.
      *
      * @param c The component for which the UI is created.
-     *
      * @return The created UI.
      */
     public static ComponentUI createUI(JComponent c) {

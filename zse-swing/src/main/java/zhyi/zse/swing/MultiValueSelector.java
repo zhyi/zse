@@ -36,9 +36,8 @@ import zhyi.zse.swing.event.SelectionChangeEvent;
 import zhyi.zse.swing.event.SelectionChangeListener;
 
 /**
- * Groups multiple buttons together as a multi-value selector.
- * <p>
- * This class is typically useful to manage check boxes.
+ * Groups multiple buttons together as a multi-value selector. This class
+ * is typically used to manage check boxes.
  *
  * @param <B> The button's type.
  * @param <T> The value's type.
@@ -69,14 +68,11 @@ public class MultiValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Adds a button and its associated value into this selector.
-     * <p>
-     * If the this selector already contains the button, the value is replaced
-     * by the new one.
+     * Adds a button and its associated value into this selector. If the this
+     * selector already contains the button, the value is replaced by the new one.
      *
      * @param button The button to be added.
-     * @param value  The value associated with the button.
-     *
+     * @param value The value associated with the button.
      * @return This selector for chained invocations.
      */
     public MultiValueSelector<B, T> add(B button, T value) {
@@ -86,13 +82,11 @@ public class MultiValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Returns the value associated with the specified button.
-     * <p>
-     * A {@code null} return can either mean the button is not contained in this
-     * selector, or the button is associated with {@code null}.
+     * Returns the value associated with the specified button. A {@code null}
+     * return can either mean the button is not contained in this selector,
+     * or the button is associated with {@code null}.
      *
      * @param button The button.
-     *
      * @return The button's associating value.
      */
     public T getValue(B button) {
@@ -113,7 +107,6 @@ public class MultiValueSelector<B extends AbstractButton, T> {
      * Removes a button and its associated value from this selector.
      *
      * @param button The button to be removed.
-     *
      * @return This selector for chained invocations.
      */
     public MultiValueSelector<B, T> remove(B button) {
@@ -166,9 +159,8 @@ public class MultiValueSelector<B extends AbstractButton, T> {
     }
 
     /**
-     * Selects the buttons that are associated with the specified values.
-     * <p>
-     * This method is a varargs variant of {@link #setSelectedValues(Collection)
+     * Selects the buttons that are associated with the specified values. This
+     * method is a varargs variant of {@link #setSelectedValues(Collection)
      * setSelectedValues(Collection&lt;V&gt;)}.
      *
      * @param values The values with which the buttons to be selected are associated.
