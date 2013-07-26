@@ -89,7 +89,6 @@ public abstract class CachedOptionManager extends OptionManager {
      * Loads the previously stored option value as a string.
      *
      * @param name The option's name.
-     *
      * @return The previously stored string value, or {@code null} if the option
      *         was not stored.
      */
@@ -99,8 +98,7 @@ public abstract class CachedOptionManager extends OptionManager {
      * Stores all managed options with the provided map.
      *
      * @param stringOptionMap A map containing all managed options with their
-     *                        names and values represented by strings.
-     *
+     *        names and values represented by strings.
      * @throws IOException If an I/O error occurs.
      */
     protected abstract void store(Map<String, String> stringOptionMap) throws IOException;

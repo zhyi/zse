@@ -55,8 +55,7 @@ public abstract class OptionManager {
      * for a specific option.
      *
      * @param <T> The option's value type.
-     *
-     * @param option   The option to be listened on.
+     * @param option The option to be listened on.
      * @param listener The listener to be added.
      */
     public <T> void addOptionChangeListener(
@@ -73,11 +72,9 @@ public abstract class OptionManager {
     }
 
     /**
-     * Removes an option change listener for all managed options.
-     * <p>
-     * If the listener was added more than once, it will be notified one less
-     * time after being removed. If the listener is {@code null}, no action
-     * is taken.
+     * Removes an option change listener for all managed options. If the listener
+     * was added more than once, it will be notified one less time after being
+     * removed. If the listener is {@code null}, no action is taken.
      *
      * @param listener The listener to be removed.
      */
@@ -86,14 +83,12 @@ public abstract class OptionManager {
     }
 
     /**
-     * Removes an option change listener for a specific option.
-     * <p>
-     * If the listener was added more than once, it will be notified one less
-     * time after being removed.
+     * Removes an option change listener for a specific option. If the listener
+     * was added more than once, it will be notified one less time after being
+     * removed.
      *
      * @param <T> The option's value type.
-     *
-     * @param option   The option that was listened on.
+     * @param option The option that was listened on.
      * @param listener The listener to be removed.
      */
     public <T> void removeOptionChangeListener(Option<T> option,
@@ -116,16 +111,13 @@ public abstract class OptionManager {
 
     /**
      * Returns the current value of an option, or its default value if the current
-     * value is {@code null}.
-     * <p>
-     * This method is typically useful to avoid null checks. However, it may
-     * still return {@code null} when both the current and default value is
-     * {@code null}. The best practice is to specify non-null default values.
+     * value is {@code null}. This method is typically useful to avoid null checks.
+     * However, it may still return {@code null} when both the current and default
+     * value is {@code null}. The best practice is to specify non-null default
+     * values.
      *
      * @param <T> The option's value type.
-     *
      * @param option The option for which to get the value.
-     *
      * @return The option's current or default value.
      */
     public <T> T getNonNullOrDefault(Option<T> option) {
@@ -136,9 +128,8 @@ public abstract class OptionManager {
     /**
      * Fires an option change event to all interested listeners.
      *
-     * @param <T>      The option's value type.
-     *
-     * @param option   The option of which the value has been changed.
+     * @param <T> The option's value type.
+     * @param option The option of which the value has been changed.
      * @param oldValue The option's old value.
      * @param newValue The option's new value.
      */
@@ -164,29 +155,24 @@ public abstract class OptionManager {
     }
 
     /**
-     * Returns the current value of an option.
-     * <p>
-     * If the option is already associated with a value, that value is returned.
-     * Otherwise, if the option was previously stored, the stored value is
-     * returned. Failing both, the option's default value is returned.
+     * Returns the current value of an option. If the option is already associated
+     * with a value, that value is returned. Otherwise, if the option was previously
+     * stored, the stored value is returned. Failing both, the option's default
+     * value is returned.
      *
      * @param <T> The option's value type.
-     *
      * @param option The option for which to get the value.
-     *
      * @return The option's current value.
      */
     public abstract <T> T get(Option<T> option);
 
     /**
-     * Associates an option with a value.
-     * <p>
-     * If the value is really changed, an option change event is fired.
+     * Associates an option with a value. If the value is really changed,
+     * an option change event is fired.
      *
      * @param <T> The option's value type.
-     *
      * @param option The option with which the value is to be associated.
-     * @param value  The value to be associated with the option.
+     * @param value The value to be associated with the option.
      */
     public abstract <T> void set(Option<T> option, T value);
 

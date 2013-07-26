@@ -37,9 +37,9 @@ public class OptionChangeEvent<T> extends EventObject {
      * Constructs a new option change event.
      *
      * @param optionManager The option manager that fired this event.
-     * @param option        The option of which the value was changed.
-     * @param oldValue      The option's old value.
-     * @param newValue      The option's new value.
+     * @param option The option of which the value was changed.
+     * @param oldValue The option's old value.
+     * @param newValue The option's new value.
      */
     public OptionChangeEvent(OptionManager optionManager,
             Option<T> option, T oldValue, T newValue) {

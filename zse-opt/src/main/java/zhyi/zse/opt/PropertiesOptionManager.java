@@ -39,7 +39,7 @@ public class PropertiesOptionManager extends CachedOptionManager {
      * Constructs a new properties option manager.
      *
      * @param path The path to the properties file.
-     * @param xml  Whether the properties file is in XML format.
+     * @param xml Whether the properties file is in XML format.
      */
     public PropertiesOptionManager(String path, boolean xml) {
         properties = new Properties();

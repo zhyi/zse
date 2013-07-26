@@ -34,9 +34,8 @@ public class PreferencesOptionManager extends CachedOptionManager {
      * Constructs a new preferences option manager.
      *
      * @param nodePath The node path for creating preferences node to store
-     *                 options. The node is always created as a sub node of
-     *                 the user's root node.
-     *
+     *        options. The node is always created as a sub node of the user's
+     *        root node.
      * @throws IllegalArgumentException If the node path is empty or absolute.
      */
     public PreferencesOptionManager(String nodePath) {

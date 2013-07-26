@@ -33,10 +33,9 @@ public class Option<T> {
     /**
      * Constructs a new option.
      *
-     * @param name         The option's name.
-     * @param valueClass   The option's value class.
+     * @param name The option's name.
+     * @param valueClass The option's value class.
      * @param defaultValue The option's default value.
-     *
      * @throws NullPointerException If the name or the value class is {@code null}.
      */
     public Option(String name, Class<T> valueClass, T defaultValue) {
@@ -74,13 +73,11 @@ public class Option<T> {
     }
 
     /**
-     * Checks whether this option is equal to some other object.
-     * <p>
-     * Two options are considered as equal when they have the same name,
-     * regardless of the other properties.
+     * Checks whether this option is equal to some other object. Two options are
+     * considered as equal when they have the same name, regardless of the other
+     * properties.
      *
      * @param other The other object to check equality with.
-     *
      * @return {@code true} if the other object is an option and has the same
      *         name as this one; {@code false} otherwise.
      */
