@@ -106,7 +106,7 @@ public class CollectionUtils {
 
                     @Override
                     public void remove() {
-                        throw new UnsupportedOperationException("Not supported.");
+                        throw new UnsupportedOperationException();
                     }
                 };
             }
