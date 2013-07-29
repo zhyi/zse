@@ -137,7 +137,6 @@ public class GuiParser {
     private boolean dynamicLocale;
     private String bundle;
     private ConverterManager converterManager;
-    private List<BeanProcessor> beanProcessors;
 
     /**
      * Constructs a new instance.
@@ -146,7 +145,6 @@ public class GuiParser {
         objectMap = new HashMap<>();
         importMap = new HashMap<>();
         starImports = new ArrayList<>();
-        beanProcessors = new ArrayList<>();
         converterManager = new ConverterManager();
         converterManager.register(Border.class, new AsObjectOnly<Border>() {
             @Override
@@ -276,17 +274,6 @@ public class GuiParser {
      */
     public <T> void registerConverter(Class<T> type, Converter<T> converter) {
         converterManager.register(type, converter);
-    }
-
-    /**
-     * Registers a custom bean processor to this parser. All registered bean
-     * processors will be called after a bean has been parsed by the standard
-     * parser.
-     *
-     * @param beanProcessor The bean processor to be registered.
-     */
-    public void registerBeanProcessor(BeanProcessor beanProcessor) {
-        beanProcessors.add(beanProcessor);
     }
 
     /**
@@ -552,10 +539,6 @@ public class GuiParser {
                         addListener(bean, child);
                     }
             }
-        }
-
-        for (BeanProcessor beanProcessor : beanProcessors) {
-            beanProcessor.process(bean, e);
         }
 
         return bean;
