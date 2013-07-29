@@ -280,7 +280,8 @@ public class GuiParser {
 
     /**
      * Registers a custom bean processor to this parser. All registered bean
-     * processors will be called after a bean has been parsed by the standard parser.
+     * processors will be called after a bean has been parsed by the standard
+     * parser.
      *
      * @param beanProcessor The bean processor to be registered.
      */
@@ -847,7 +848,6 @@ public class GuiParser {
                     break;
                 case "res":
                     value = ResourceBundle.getBundle(bundle,
-                            Locale.getDefault(), controllerLoader,
                             FallbackLocaleControl.EN_US_CONTROL).getObject(target);
                     break;
                 case "sys":

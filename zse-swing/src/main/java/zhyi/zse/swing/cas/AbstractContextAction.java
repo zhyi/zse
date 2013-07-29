@@ -21,6 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ResourceBundle;
 import javax.swing.AbstractAction;
+import zhyi.zse.i18n.FallbackLocaleControl;
 import zhyi.zse.swing.PropertyKeys;
 
 /**
@@ -63,7 +64,8 @@ abstract class AbstractContextAction extends AbstractAction {
     abstract void doAction();
 
     private static void putName(AbstractContextAction a, String bundle, String i18nKey) {
-        ResourceBundle rb = ResourceBundle.getBundle(bundle);
+        ResourceBundle rb = ResourceBundle.getBundle(
+                bundle, FallbackLocaleControl.EN_US_CONTROL);
         if (rb.containsKey(i18nKey)) {
             a.putValue(NAME, rb.getString(i18nKey));
         }

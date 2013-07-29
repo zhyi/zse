@@ -58,7 +58,6 @@ import zhyi.zse.swing.SwingUtils;
  * @author Zhao Yi
  */
 public class TextComponentContextActionSupport extends ContextActionSupport<JTextComponent> {
-    private static final String BUNDLE = "zhyi.zse.swing.cas.TextComponentContextActionSupport";
     private static final Method GET_FOCUSED_COMPONENT
             = ReflectionUtils.getDeclaredMethod(JTextComponent.class, "getFocusedComponent");
 
