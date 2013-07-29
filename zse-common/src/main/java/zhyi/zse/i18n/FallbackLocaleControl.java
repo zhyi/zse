@@ -58,15 +58,4 @@ public class FallbackLocaleControl extends Control {
     public Locale getFallbackLocale(String baseName, Locale locale) {
         return fallbackLocale;
     }
-
-    /**
-     * A convenient method to get a I18N string using this control.
-     *
-     * @param bundle The resource bundle's base name.
-     * @param key The key for the desired string.
-     * @return The string for the given key.
-     */
-    public String getString(String bundle, String key) {
-        return ResourceBundle.getBundle(bundle, this).getString(key);
-    }
 }

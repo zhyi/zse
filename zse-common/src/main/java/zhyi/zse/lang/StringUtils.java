@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.ResourceBundle;
 import zhyi.zse.i18n.FallbackLocaleControl;
 
 /**
@@ -134,8 +135,8 @@ public final class StringUtils {
             DelimitationStyle style, boolean trim, int limit) {
         if (style == DelimitationStyle.INSERT_DELIMITER) {
             throw new IllegalArgumentException(MessageFormat.format(
-                    FallbackLocaleControl.EN_US_CONTROL.getString(
-                            "zhyi.zse.lang.StringUtils", "badDelimitationStyle"),
+                    ResourceBundle.getBundle("zhyi.zse.lang.StringUtils",
+                            FallbackLocaleControl.EN_US_CONTROL).getString("badDelimitationStyle"),
                     style.name()));
         }
 
