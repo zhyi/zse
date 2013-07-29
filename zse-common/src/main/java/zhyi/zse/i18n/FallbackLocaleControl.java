@@ -17,7 +17,6 @@
 package zhyi.zse.i18n;
 
 import java.util.Locale;
-import java.util.ResourceBundle;
 import java.util.ResourceBundle.Control;
 
 /**
