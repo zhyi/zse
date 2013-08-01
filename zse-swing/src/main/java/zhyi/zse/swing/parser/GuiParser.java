@@ -81,7 +81,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.w3c.dom.ProcessingInstruction;
 import org.xml.sax.SAXException;
 import zhyi.zse.collection.CollectionUtils;
@@ -366,13 +365,13 @@ public class GuiParser {
                         break;
                     case Node.ELEMENT_NODE:    // The unique root node.
                         if (bundle == null) {
-                            // Assume the resource bundle has the same name
+                            // The resource bundle should have the same name
                             // as the controller's class. It has to be done
                             // like this in case of inner class.
                             bundle = controllerClass.getPackage().getName()
                                     + "." + fileName;
                         }
-                        for (Element child : getChildElements((Element) node, "*")) {
+                        for (Element child : DocumentUtils.getChildElements((Element) node, "*")) {
                             createBean(child);
                         }
                 }
@@ -430,7 +429,7 @@ public class GuiParser {
             }
         }
 
-        for (Element child : getChildElements(e, "*")) {
+        for (Element child : DocumentUtils.getChildElements(e, "*")) {
             String name = child.getTagName();
             switch (name) {
                 case "layout":
@@ -625,10 +624,10 @@ public class GuiParser {
         GroupLayout gl = new GroupLayout(host);
         setProperties(gl, e);
         host.setLayout(gl);
-        List<Element> groups = getChildElements(e, "group");
+        List<Element> groups = DocumentUtils.getChildElements(e, "group");
         gl.setHorizontalGroup(createGroup(gl, groups.get(0)));
         gl.setVerticalGroup(createGroup(gl, groups.get(1)));
-        for (Element link : getChildElements(e, "link")) {
+        for (Element link : DocumentUtils.getChildElements(e, "link")) {
             Integer axis = evaluate(
                     DocumentUtils.getAttribute(link, "axis"), Integer.class, null);
             List<JComponent> components = new ArrayList<>();
@@ -670,7 +669,7 @@ public class GuiParser {
         int min;
         int pref;
         int max;
-        for (Element child : getChildElements(e, "*")) {
+        for (Element child : DocumentUtils.getChildElements(e, "*")) {
             switch (child.getTagName()) {
                 case "component":
                     JComponent c = (JComponent) objectMap.get(
@@ -915,16 +914,6 @@ public class GuiParser {
             listenerMateMap.put(c, lm);
         }
         return lm;
-    }
-
-    private static List<Element> getChildElements(Element e, String name) {
-        List<Element> childElements = new ArrayList<>();
-        NodeList nodeList = e.getElementsByTagName(name);
-        int length = nodeList.getLength();
-        for (int i = 0; i < length; i++) {
-            childElements.add((Element) nodeList.item(i));
-        }
-        return childElements;
     }
 
     private static boolean isLocalizable(String exp) {
