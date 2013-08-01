@@ -288,26 +288,6 @@ public class GuiParser {
     /**
      * Parses the specified controller's associating GUI XML file to initialize
      * the GUI components defined in the controller.
-     * <p>
-     * The controller's associated GUI XML file must be located in the same
-     * package as the controller's class, and named as "{@code
-     * <controller_class_simple_name>.xml}". For example, if the controller's
-     * class is "{@code com.abc.Controller}", its associating GUI XML file must
-     * be located in package "{@code com.abc}", and named as "{@code Controller.xml}".
-     * This rule also applies to resource bundles if there is no "{@code resource}"
-     * processing instruction but resource bundle expressions ("{@code #{res.XXX}")
-     * are used.
-     * <p>
-     * The controller's class can optionally declares fields with their types
-     * and names matching the elements declared in the GUI XML file. The GUI XML
-     * file can have an element to represent the controller itself, and that
-     * element's tag must be named as the simple name of the controller's class.
-     * This is typically useful when the controller is a GUI component.
-     * <p>
-     * The {@code existingObjectMap} may contain already created objects. While
-     * parsing an element, if the element's ID is already associated with a object
-     * in this map, that object is directly used instead of reflectively creating
-     * a new one with the default constructor.
      *
      * @param controller The controller.
      * @param existingObjectMap A map containing existing ID-object pairs.
@@ -371,9 +351,7 @@ public class GuiParser {
                             bundle = controllerClass.getPackage().getName()
                                     + "." + fileName;
                         }
-                        for (Element child : DocumentUtils.getChildElements((Element) node, "*")) {
-                            createBean(child);
-                        }
+                        createBean((Element) node);
                 }
             }
         } catch (SAXException | IOException ex) {
@@ -429,7 +407,9 @@ public class GuiParser {
             }
         }
 
-        for (Element child : DocumentUtils.getChildElements(e, "*")) {
+        List<Element> children = DocumentUtils.getChildElements(e, "*");
+        boolean hasLayout = e.getElementsByTagName("layout").getLength() > 0;
+        for (Element child : children) {
             String name = child.getTagName();
             switch (name) {
                 case "layout":
@@ -444,7 +424,7 @@ public class GuiParser {
                     setLayout(host, child);
                     break;
                 case "component":
-                    if (bean instanceof Container) {
+                    if (bean instanceof Container && !hasLayout) {
                         ((Container) bean).add((Component) objectMap.get(
                                 DocumentUtils.getAttribute(child, "ref")));
                     }
@@ -541,6 +521,13 @@ public class GuiParser {
                 default:
                     if (name.endsWith("Listener")) {
                         addListener(bean, child);
+                    } else {
+                        Object subBean = createBean(child);
+                        if (bean instanceof Container
+                                && subBean instanceof Component
+                                && !hasLayout) {
+                            ((Container) bean).add((Component) subBean);
+                        }
                     }
             }
         }
