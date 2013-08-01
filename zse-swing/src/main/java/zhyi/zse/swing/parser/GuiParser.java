@@ -39,11 +39,9 @@ import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -82,7 +80,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.ProcessingInstruction;
@@ -99,6 +96,7 @@ import zhyi.zse.lang.StringUtils.DelimitationStyle;
 import zhyi.zse.swing.MultiValueSelector;
 import zhyi.zse.swing.SingleValueSelector;
 import zhyi.zse.swing.SwingUtils;
+import zhyi.zse.xml.DocumentUtils;
 
 /**
  * This class eases the way to set up GUI components and layouts with XML files,
@@ -339,8 +337,8 @@ public class GuiParser {
         try {
             String fileName = controllerClass.getSimpleName();
             String guiFile = fileName + ".xml";
-            for (Node node : iterable(documentBuilder.parse(
-                    controllerClass.getResource(guiFile).toString()).getChildNodes())) {
+            for (Node node : DocumentUtils.getChildNodes(documentBuilder.parse(
+                    controllerClass.getResource(guiFile).toString()), Node.class)) {
                 switch (node.getNodeType()) {
                     case Node.PROCESSING_INSTRUCTION_NODE:
                         ProcessingInstruction pi = (ProcessingInstruction) node;
@@ -374,7 +372,7 @@ public class GuiParser {
                             bundle = controllerClass.getPackage().getName()
                                     + "." + fileName;
                         }
-                        for (Element child : getChildren((Element) node, "*")) {
+                        for (Element child : getChildElements((Element) node, "*")) {
                             createBean(child);
                         }
                 }
@@ -393,7 +391,7 @@ public class GuiParser {
             bean = ReflectionUtils.newInstance(getClass(e.getTagName()));
         }
 
-        String id = getAttribute(e, "id");
+        String id = DocumentUtils.getAttribute(e, "id");
         if (id != null) {
             objectMap.put(id, bean);
             if (bean != controller) {
@@ -404,7 +402,7 @@ public class GuiParser {
             }
         }
 
-        setProperties(bean, e.getAttributes());
+        setProperties(bean, e);
         if (autoMnemonic) {
             if (bean instanceof JLabel) {
                 JLabel label = (JLabel) bean;
@@ -432,7 +430,7 @@ public class GuiParser {
             }
         }
 
-        for (Element child : getChildren(e, "*")) {
+        for (Element child : getChildElements(e, "*")) {
             String name = child.getTagName();
             switch (name) {
                 case "layout":
@@ -448,8 +446,8 @@ public class GuiParser {
                     break;
                 case "component":
                     if (bean instanceof Container) {
-                        ((Container) bean).add((Component)
-                                objectMap.get(getAttribute(child, "ref")));
+                        ((Container) bean).add((Component) objectMap.get(
+                                DocumentUtils.getAttribute(child, "ref")));
                     }
                     break;
                 case "separator":
@@ -458,36 +456,40 @@ public class GuiParser {
                     } else if (bean instanceof JPopupMenu) {
                         ((JPopupMenu) bean).addSeparator();
                     } else if (bean instanceof JToolBar) {
-                        ((JToolBar) bean).addSeparator(
-                                evaluate(getAttribute(child, "size"),
-                                        Dimension.class, null));
+                        ((JToolBar) bean).addSeparator(evaluate(
+                                DocumentUtils.getAttribute(child, "size"),
+                                Dimension.class, null));
                     }
                     break;
                 case "button":
                     if (bean instanceof ButtonGroup) {
-                        ((ButtonGroup) bean).add((AbstractButton)
-                                objectMap.get(getAttribute(child, "ref")));
+                        ((ButtonGroup) bean).add((AbstractButton) objectMap.get(
+                                DocumentUtils.getAttribute(child, "ref")));
                     } else if (bean instanceof SingleValueSelector) {
                         SingleValueSelector<AbstractButton, Object> svs
                                 = (SingleValueSelector<AbstractButton, Object>) bean;
-                        Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
-                        AbstractButton button = (AbstractButton)
-                                objectMap.get(getAttribute(child, "ref"));
-                        svs.add(button, evaluate(getAttribute(child, "value"),
+                        Class<?> valueClass = getClass(
+                                DocumentUtils.getAttribute(e, "valueClass"));
+                        AbstractButton button = (AbstractButton) objectMap.get(
+                                DocumentUtils.getAttribute(child, "ref"));
+                        svs.add(button, evaluate(
+                                        DocumentUtils.getAttribute(child, "value"),
                                         valueClass, null));
-                        if (evaluate(getAttribute(child, "selected"),
+                        if (evaluate(DocumentUtils.getAttribute(child, "selected"),
                                 Boolean.class, Boolean.FALSE)) {
                             button.setSelected(true);
                         }
                     } else if (bean instanceof MultiValueSelector) {
                         MultiValueSelector<AbstractButton, Object> mvs
                                 = (MultiValueSelector<AbstractButton, Object>) bean;
-                        Class<?> valueClass = getClass(getAttribute(e, "valueClass"));
-                        AbstractButton button = (AbstractButton)
-                                objectMap.get(getAttribute(child, "ref"));
-                        mvs.add(button, evaluate(getAttribute(child, "value"),
+                        Class<?> valueClass = getClass(
+                                DocumentUtils.getAttribute(e, "valueClass"));
+                        AbstractButton button = (AbstractButton) objectMap.get(
+                                DocumentUtils.getAttribute(child, "ref"));
+                        mvs.add(button, evaluate(
+                                        DocumentUtils.getAttribute(child, "value"),
                                         valueClass, null));
-                        if (evaluate(getAttribute(child, "selected"),
+                        if (evaluate(DocumentUtils.getAttribute(child, "selected"),
                                 Boolean.class, Boolean.FALSE)) {
                             button.setSelected(true);
                         }
@@ -496,11 +498,12 @@ public class GuiParser {
                 case "tab":
                     if (bean instanceof JTabbedPane) {
                         JTabbedPane tp = (JTabbedPane) bean;
-                        Component c = (Component) objectMap.get(getAttribute(child, "ref"));
-                        tp.addTab(evaluate(getAttribute(child, "title"), String.class, c.getName()),
-                                evaluate(getAttribute(child, "icon"), Icon.class, null),
-                                c, evaluate(getAttribute(child, "tip"), String.class, null));
-                        String tab = getAttribute(child, "tab");
+                        Component c = (Component) objectMap.get(
+                                DocumentUtils.getAttribute(child, "ref"));
+                        tp.addTab(evaluate(DocumentUtils.getAttribute(child, "title"), String.class, c.getName()),
+                                evaluate(DocumentUtils.getAttribute(child, "icon"), Icon.class, null),
+                                c, evaluate(DocumentUtils.getAttribute(child, "tip"), String.class, null));
+                        String tab = DocumentUtils.getAttribute(child, "tab");
                         if (tab != null) {
                             tp.setTabComponentAt(tp.getTabCount() - 1,
                                     (Component) objectMap.get(tab));
@@ -515,8 +518,10 @@ public class GuiParser {
                             labelTable = new Hashtable<>();
                             slider.setLabelTable(labelTable);
                         }
-                        Integer value = evaluate(getAttribute(child, "value"), Integer.class);
-                        final String labelExp = getAttribute(child, "label");
+                        Integer value = evaluate(
+                                DocumentUtils.getAttribute(child, "value"),
+                                Integer.class);
+                        final String labelExp = DocumentUtils.getAttribute(child, "label");
                         JComponent label = (JComponent) objectMap.get(labelExp);
                         if (label == null) {
                             label = new JLabel(evaluate(labelExp, String.class));
@@ -544,10 +549,10 @@ public class GuiParser {
         return bean;
     }
 
-    private void setProperties(final Object bean, NamedNodeMap attrs) {
+    private void setProperties(final Object bean, Element e) {
         BeanMate bm = getBeanMate(bean.getClass());
         String borderTitle = null;
-        for (Node attr : iterable(attrs)) {
+        for (Node attr : DocumentUtils.getAttributes(e)) {
             String name = attr.getNodeName();
             final String value = attr.getNodeValue();
             switch (name) {
@@ -618,16 +623,17 @@ public class GuiParser {
 
     private void setLayout(Container host, Element e) {
         GroupLayout gl = new GroupLayout(host);
-        setProperties(gl, e.getAttributes());
+        setProperties(gl, e);
         host.setLayout(gl);
-        List<Element> groups = getChildren(e, "group");
+        List<Element> groups = getChildElements(e, "group");
         gl.setHorizontalGroup(createGroup(gl, groups.get(0)));
         gl.setVerticalGroup(createGroup(gl, groups.get(1)));
-        for (Element link : getChildren(e, "link")) {
-            Integer axis = evaluate(getAttribute(link, "axis"), Integer.class, null);
+        for (Element link : getChildElements(e, "link")) {
+            Integer axis = evaluate(
+                    DocumentUtils.getAttribute(link, "axis"), Integer.class, null);
             List<JComponent> components = new ArrayList<>();
             for (String ref : StringUtils.split(
-                    getAttribute(link, "components"), ",", true)) {
+                    DocumentUtils.getAttribute(link, "components"), ",", true)) {
                 components.add((JComponent) objectMap.get(ref));
             }
             if (axis == null) {
@@ -641,12 +647,12 @@ public class GuiParser {
     @SuppressWarnings("null")
     private Group createGroup(GroupLayout gl, Element e) {
         Group group = null;
-        switch (getAttribute(e, "type")) {
+        switch (DocumentUtils.getAttribute(e, "type")) {
             case "baseline":
                 group = gl.createBaselineGroup(
-                        evaluate(getAttribute(e, "resizable"),
+                        evaluate(DocumentUtils.getAttribute(e, "resizable"),
                                 Boolean.class, Boolean.FALSE),
-                        evaluate(getAttribute(e, "anchorBaselineToTop"),
+                        evaluate(DocumentUtils.getAttribute(e, "anchorBaselineToTop"),
                                 Boolean.class, Boolean.FALSE));
                 break;
             case "sequential":
@@ -654,9 +660,9 @@ public class GuiParser {
                 break;
             case "parallel":
                 group = gl.createParallelGroup(
-                        evaluate(getAttribute(e, "alignment"),
+                        evaluate(DocumentUtils.getAttribute(e, "alignment"),
                                 Alignment.class, Alignment.LEADING),
-                        evaluate(getAttribute(e, "resizable"),
+                        evaluate(DocumentUtils.getAttribute(e, "resizable"),
                                 Boolean.class, Boolean.TRUE));
                 break;
         }
@@ -664,23 +670,26 @@ public class GuiParser {
         int min;
         int pref;
         int max;
-        for (Element child : getChildren(e, "*")) {
+        for (Element child : getChildElements(e, "*")) {
             switch (child.getTagName()) {
                 case "component":
                     JComponent c = (JComponent) objectMap.get(
-                            getAttribute(child, "ref"));
-                    pref = evaluate(getAttribute(child, "pref"),
+                            DocumentUtils.getAttribute(child, "ref"));
+                    pref = evaluate(DocumentUtils.getAttribute(child, "pref"),
                             Integer.class, GroupLayout.DEFAULT_SIZE);
-                    min = evaluate(getAttribute(child, "min"), Integer.class, pref);
-                    max = evaluate(getAttribute(child, "max"), Integer.class, pref);
+                    min = evaluate(DocumentUtils.getAttribute(child, "min"),
+                            Integer.class, pref);
+                    max = evaluate(DocumentUtils.getAttribute(child, "max"),
+                            Integer.class, pref);
                     if (group instanceof SequentialGroup) {
                         ((SequentialGroup) group).addComponent(
-                                evaluate(getAttribute(child, "useAsBaseline"),
+                                evaluate(DocumentUtils.getAttribute(child, "useAsBaseline"),
                                         Boolean.class, Boolean.FALSE),
                                 c, min, pref, max);
                     } else {
                         Alignment alignment = evaluate(
-                                getAttribute(child, "alignment"), Alignment.class, null);
+                                DocumentUtils.getAttribute(child, "alignment"),
+                                Alignment.class, null);
                         if (alignment == null) {
                             ((ParallelGroup) group).addComponent(c, min, pref, max);
                         } else {
@@ -690,25 +699,30 @@ public class GuiParser {
                     }
                     break;
                 case "containerGap":
-                    pref = evaluate(getAttribute(child, "pref"),
+                    pref = evaluate(DocumentUtils.getAttribute(child, "pref"),
                             Integer.class, GroupLayout.DEFAULT_SIZE);
                     ((SequentialGroup) group).addContainerGap(pref,
-                            evaluate(getAttribute(child, "max"), Integer.class, pref));
+                            evaluate(DocumentUtils.getAttribute(child, "max"),
+                            Integer.class, pref));
                     break;
                 case "gap":
-                    pref = evaluate(getAttribute(child, "pref"),
+                    pref = evaluate(DocumentUtils.getAttribute(child, "pref"),
                             Integer.class, GroupLayout.DEFAULT_SIZE);
-                    group.addGap(evaluate(getAttribute(child, "min"), Integer.class, pref),
-                            pref, evaluate(getAttribute(child, "max"), Integer.class, pref));
+                    group.addGap(evaluate(DocumentUtils.getAttribute(child, "min"), Integer.class, pref),
+                            pref, evaluate(DocumentUtils.getAttribute(child, "max"), Integer.class, pref));
                     break;
                 case "preferredGap":
-                    JComponent c1 = (JComponent) objectMap.get(getAttribute(child, "component1"));
-                    JComponent c2 = (JComponent) objectMap.get(getAttribute(child, "component2"));
-                    ComponentPlacement type = evaluate(getAttribute(child, "type"),
+                    JComponent c1 = (JComponent) objectMap.get(
+                            DocumentUtils.getAttribute(child, "component1"));
+                    JComponent c2 = (JComponent) objectMap.get(
+                            DocumentUtils.getAttribute(child, "component2"));
+                    ComponentPlacement type = evaluate(
+                            DocumentUtils.getAttribute(child, "type"),
                             ComponentPlacement.class, ComponentPlacement.RELATED);
-                    pref = evaluate(getAttribute(child, "pref"),
+                    pref = evaluate(DocumentUtils.getAttribute(child, "pref"),
                             Integer.class, GroupLayout.DEFAULT_SIZE);
-                    max = evaluate(getAttribute(child, "max"), Integer.class, pref);
+                    max = evaluate(DocumentUtils.getAttribute(child, "max"),
+                            Integer.class, pref);
                     if (c1 != null && c2 != null) {
                         ((SequentialGroup) group).addPreferredGap(c1, c2, type, pref, max);
                     } else {
@@ -718,12 +732,12 @@ public class GuiParser {
                 case "group":
                     if (group instanceof SequentialGroup) {
                         ((SequentialGroup) group).addGroup(
-                                evaluate(getAttribute(child, "useAsBaseline"),
+                                evaluate(DocumentUtils.getAttribute(child, "useAsBaseline"),
                                         Boolean.class, Boolean.FALSE),
                                 createGroup(gl, child));
                     } else {
                         ((ParallelGroup) group).addGroup(
-                                evaluate(getAttribute(child, "alignment"),
+                                evaluate(DocumentUtils.getAttribute(child, "alignment"),
                                         Alignment.class, Alignment.LEADING),
                                 createGroup(gl, child));
                     }
@@ -737,7 +751,7 @@ public class GuiParser {
         final Map<Method, Method> methodMap = new HashMap<>();
         String forProp = null;
         String propName = null;
-        for (Node attr : iterable(e.getAttributes())) {
+        for (Node attr : DocumentUtils.getAttributes(e)) {
             String name = attr.getNodeName();
             String value = attr.getNodeValue();
             switch (name) {
@@ -903,84 +917,14 @@ public class GuiParser {
         return lm;
     }
 
-    private static Iterable<Node> iterable(final NodeList nodeList) {
-        final int length = nodeList.getLength();
-        return new Iterable<Node>() {
-            @Override
-            public Iterator<Node> iterator() {
-                return new Iterator<Node>() {
-                    private int index;
-
-                    @Override
-                    public boolean hasNext() {
-                        return index < length;
-                    }
-
-                    @Override
-                    public Node next() {
-                        if (index < length) {
-                            Node node = nodeList.item(index);
-                            index++;
-                            return node;
-                        }
-                        throw new NoSuchElementException("No more nodes.");
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("Not supported.");
-                    }
-                };
-            }
-        };
-    }
-
-    private static Iterable<Node> iterable(final NamedNodeMap namedNodeMap) {
-        final int length = namedNodeMap.getLength();
-        return new Iterable<Node>() {
-            @Override
-            public Iterator<Node> iterator() {
-                return new Iterator<Node>() {
-                    private int index;
-
-                    @Override
-                    public boolean hasNext() {
-                        return index < length;
-                    }
-
-                    @Override
-                    public Node next() {
-                        if (index < length) {
-                            Node node = namedNodeMap.item(index);
-                            index++;
-                            return node;
-                        }
-                        throw new NoSuchElementException("No more nodes.");
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("Not supported.");
-                    }
-                };
-            }
-        };
-    }
-
-    private static String getAttribute(Element e, String name) {
-        Node attr = e.getAttributeNode(name);
-        return attr == null ? null : attr.getNodeValue();
-    }
-
-    private static List<Element> getChildren(Element e, String name) {
-        List<Element> children = new ArrayList<>();
-        for (Node child : iterable(e.getChildNodes())) {
-            if (child.getNodeType() == Node.ELEMENT_NODE
-                    && (name.equals("*") || name.equals(child.getNodeName()))) {
-                children.add((Element) child);
-            }
+    private static List<Element> getChildElements(Element e, String name) {
+        List<Element> childElements = new ArrayList<>();
+        NodeList nodeList = e.getElementsByTagName(name);
+        int length = nodeList.getLength();
+        for (int i = 0; i < length; i++) {
+            childElements.add((Element) nodeList.item(i));
         }
-        return children;
+        return childElements;
     }
 
     private static boolean isLocalizable(String exp) {
