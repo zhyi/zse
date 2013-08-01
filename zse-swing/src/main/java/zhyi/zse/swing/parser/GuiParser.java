@@ -831,6 +831,7 @@ public class GuiParser {
                     break;
                 case "res":
                     value = ResourceBundle.getBundle(bundle,
+                            Locale.getDefault(), controllerLoader,
                             FallbackLocaleControl.EN_US_CONTROL).getObject(target);
                     break;
                 case "sys":
