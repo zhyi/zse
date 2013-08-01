@@ -136,37 +136,22 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
         @Override
         public Object getValue(String key) {
             JTextComponent tc = getTextComponent();
-            switch (key) {
-                case NAME:
-                    UndoManager um = (UndoManager) tc.getClientProperty("undoManager");
-                    switch (type) {
-                        case undo:
-                            return um == null
-                                    ? UIManager.getString("AbstractUndoableEdit.undoText")
-                                    : um.getUndoPresentationName();
-                        case redo:
-                            return um == null
-                                    ? UIManager.getString("AbstractUndoableEdit.redoText")
-                                    : um.getRedoPresentationName();
-                        default:
-                            return super.getValue(NAME);
-                    }
-                case "visible":
-                    switch (type) {
-                        case undo:
-                        case redo:
-                        case cut:
-                        case paste:
-                        case delete:
-                        case cutAll:
-                        case replaceAll:
-                        case deleteAll:
-                            return tc.isEditable();
-                        default:
-                            return true;
-                    }
-                default:
-                    return super.getValue(key);
+            if (key.equals(NAME)) {
+                UndoManager um = (UndoManager) tc.getClientProperty("undoManager");
+                switch (type) {
+                    case undo:
+                        return um == null
+                                ? UIManager.getString("AbstractUndoableEdit.undoText")
+                                : um.getUndoPresentationName();
+                    case redo:
+                        return um == null
+                                ? UIManager.getString("AbstractUndoableEdit.redoText")
+                                : um.getRedoPresentationName();
+                    default:
+                        return super.getValue(NAME);
+                }
+            } else {
+                return super.getValue(key);
             }
         }
 
@@ -210,7 +195,24 @@ public class TextComponentContextActionSupport extends ContextActionSupport<JTex
         }
 
         @Override
-        public void doAction() {
+        protected boolean isVisible() {
+            switch (type) {
+                case undo:
+                case redo:
+                case cut:
+                case paste:
+                case delete:
+                case cutAll:
+                case replaceAll:
+                case deleteAll:
+                    return getTextComponent().isEditable();
+                default:
+                    return true;
+            }
+        }
+
+        @Override
+        protected void doAction() {
             JTextComponent tc = getTextComponent();
             UndoManager um = (UndoManager) tc.getClientProperty("undoManager");
             if (isEnabled()) {

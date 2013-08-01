@@ -19,24 +19,34 @@ package zhyi.zse.swing.cas;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.Locale;
 import java.util.ResourceBundle;
 import javax.swing.AbstractAction;
 import zhyi.zse.i18n.FallbackLocaleControl;
 import zhyi.zse.swing.PropertyKeys;
 
 /**
+ * A convenient class that eases the implementation of context action classes.
+ *
  * @author Zhao Yi
  */
-abstract class AbstractContextAction extends AbstractAction {
+public abstract class AbstractContextAction extends AbstractAction {
     private static final LocaleChangeHandler LOCALE_CHANGE_HANDLER = new LocaleChangeHandler();
 
     private String bundle;
     private String i18nKey;
 
-    AbstractContextAction(String bundle, String i18nKey) {
+    /**
+     * Constructs a new instance.
+     *
+     * @param bundle The base name of the resource bundle from which the action's
+     *        name is retrieved.
+     * @param i18nKey The key to get the action's name from the resource bundle.
+     */
+    protected AbstractContextAction(String bundle, String i18nKey) {
         this.bundle = bundle;
         this.i18nKey = i18nKey;
-        putName(this, bundle, i18nKey);
+        putName(bundle, i18nKey);
         addPropertyChangeListener(LOCALE_CHANGE_HANDLER);
     }
 
@@ -57,17 +67,28 @@ abstract class AbstractContextAction extends AbstractAction {
         }
     }
 
-    boolean isVisible() {
+    /**
+     * Returns whether this context action should be visible in the context
+     * popup menu. By default this methods returns {@code true}, an subclasses
+     * should override it as needed.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    protected boolean isVisible() {
         return true;
     }
 
-    abstract void doAction();
+    /**
+     * Performs the context action. Only invoked when it is enabled.
+     */
+    protected abstract void doAction();
 
-    private static void putName(AbstractContextAction a, String bundle, String i18nKey) {
-        ResourceBundle rb = ResourceBundle.getBundle(
-                bundle, FallbackLocaleControl.EN_US_CONTROL);
+    private void putName(String bundle, String i18nKey) {
+        ResourceBundle rb = ResourceBundle.getBundle(bundle,
+                Locale.getDefault(), getClass().getClassLoader(),
+                FallbackLocaleControl.EN_US_CONTROL);
         if (rb.containsKey(i18nKey)) {
-            a.putValue(NAME, rb.getString(i18nKey));
+            putValue(NAME, rb.getString(i18nKey));
         }
     }
 
@@ -76,7 +97,7 @@ abstract class AbstractContextAction extends AbstractAction {
         public void propertyChange(PropertyChangeEvent evt) {
             if (evt.getPropertyName().equals(PropertyKeys.ACTION_LOCALE)) {
                 AbstractContextAction a = (AbstractContextAction) evt.getSource();
-                putName(a, a.bundle, a.i18nKey);
+                a.putName(a.bundle, a.i18nKey);
             }
         }
     }

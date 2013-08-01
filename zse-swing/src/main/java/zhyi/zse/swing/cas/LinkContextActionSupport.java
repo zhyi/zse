@@ -44,7 +44,7 @@ public class LinkContextActionSupport extends ContextActionSupport<Link> {
         }
 
         @Override
-        void doAction() {
+        protected void doAction() {
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
                     new StringSelection(component.getUri().toString()), null);
         }

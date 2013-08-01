@@ -110,7 +110,7 @@ public class TableHeaderContextActionSupport extends ContextActionSupport<JTable
         }
 
         @Override
-        void doAction() {
+        protected void doAction() {
             SwingUtils.fitColumnWidth(component.getTable(),
                     (int) component.getClientProperty(Key.SELECTED_COLUMN));
         }
@@ -130,7 +130,7 @@ public class TableHeaderContextActionSupport extends ContextActionSupport<JTable
         }
 
         @Override
-        void doAction() {
+        protected void doAction() {
             SwingUtils.fitAllColumnWidth(component.getTable());
         }
     }
@@ -168,7 +168,7 @@ public class TableHeaderContextActionSupport extends ContextActionSupport<JTable
         }
 
         @Override
-        void doAction() {
+        protected void doAction() {
             List<TableColumn> tableColumns = Collections.list(
                     component.getColumnModel().getColumns());
 
